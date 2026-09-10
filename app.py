@@ -19,12 +19,11 @@ class FantAlgoritmoPro:
             v_mercato = 10
 
         nome_lower = str(nome).lower()
-        
         fattore_titolarita = presenze_stimate
         if "provedel" in nome_lower:
-            fattore_titolarita = 0.4  # Gestione portiere panchinaro
+            fattore_titolarita = 0.4
         elif "vicario" in nome_lower:
-            fattore_titolarita = 0.99 # Gestione portiere titolare fisso
+            fattore_titolarita = 0.99
 
         score_affidabilita = (f_media * 0.7) + (fattore_titolarita * 3.0)
         
@@ -44,8 +43,6 @@ class FantAlgoritmoPro:
 
     def calcola_formazione(self, modulo="3-4-3"):
         lista = st.session_state.giocatori
-        
-        # Sicurezza sui dizionari esistenti senza chiave titolarita
         for g in lista:
             if "titolarita" not in g:
                 g["titolarita"] = 0.9
@@ -82,12 +79,15 @@ class FantAlgoritmoPro:
         consigli = []
         lista = st.session_state.giocatori
         if not lista:
-            return ["Carica la rosa per sbloccare i consigli."]
+            return []
         for g in lista:
             if g["fanta_media"] < 6.0 and g["ruolo"] in ['C', 'A']:
-                consigli.append(f"⚠️ **{g['nome']} ({g['ruolo']})**: Rendimento basso (FM {g['fanta_media']}). **Valuta cessione / scambio.**")
-        if not consigli:
-            consigli.append("✅ Rosa in salute e ottimizzata!")
+                consigli.append({
+                    "nome": g["nome"],
+                    "ruolo": g["ruolo"],
+                    "fanta_media": g["fanta_media"],
+                    "testo": f"Rendimento basso (FM {g['fanta_media']}). Valuta cessione o scambio."
+                })
         return consigli
 
 app = FantAlgoritmoPro()
@@ -102,72 +102,116 @@ st.markdown("""
     color: #ffffff;
 }
 .campo-pro {
-    background: linear-gradient(180deg, #1e3a1e 0%, #112611 100%);
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    background: linear-gradient(135deg, #1e4d2b 0%, #11331c 100%);
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    border-radius: 24px;
     padding: 30px 10px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 560px;
+    min-height: 650px;
     background-image: 
-        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 100% 100%;
+        linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
 }
+/* Linea di metà campo centrale */
 .campo-pro::after {
     content: "";
     position: absolute;
     top: 50%;
-    left: 5%;
-    width: 90%;
+    left: 4%;
+    width: 92%;
     height: 2px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
 }
 .reparto-row {
     display: flex;
     justify-content: center;
-    gap: 18px;
+    gap: 12px;
     z-index: 2;
-    margin: 6px 0;
+    margin: 4px 0;
     flex-wrap: wrap;
 }
 .player-badge {
-    background: rgba(30, 41, 59, 0.9);
-    border: 2px solid #38bdf8;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid #38bdf8;
     border-radius: 12px;
-    padding: 8px 10px;
+    padding: 10px 6px 12px 6px;
     text-align: center;
-    width: 115px;
-    box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+    width: 108px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
 }
 .player-avatar {
-    width: 38px;
-    height: 38px;
-    background: #475569;
+    width: 40px;
+    height: 40px;
+    background: #334155;
     border-radius: 50%;
-    margin: 0 auto 5px auto;
+    margin: 0 auto 6px auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    border: 1px solid #94a3b8;
+    font-size: 18px;
+    border: 2px solid #64748b;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
 }
 .player-name-pro {
     font-weight: 700;
-    font-size: 12px;
+    font-size: 11px;
     color: #f8fafc;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding: 0 2px;
 }
 .player-sub {
     font-size: 9px;
     color: #38bdf8;
     margin-top: 2px;
     font-weight: 600;
+}
+/* Indice di titolarità in alto a destra nella card */
+.titolarity-index {
+    position: absolute;
+    top: 5px;
+    right: 6px;
+    font-size: 9px;
+    font-weight: bold;
+    color: #e2e8f0;
+    background: rgba(51, 65, 85, 0.8);
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+/* Linee di titolarità in basso (Verde / Arancione) */
+.titolarity-bar-green {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-color: #22c55e;
+}
+.titolarity-bar-orange {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-color: #f97316;
+}
+.trade-card {
+    background: rgba(30, 41, 59, 0.9);
+    border-left: 4px solid #f59e0b;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -224,7 +268,9 @@ with st.sidebar:
                             try: valore_mercato = int(float(str(riga[idx_val]).replace(',', '.')))
                             except: pass
 
-                        if app.aggiungi_giocatore(nome, ruolo, fanta_media, valore_mercato):
+                        presenze_stimate = 0.95 if fanta_media > 6.5 else 0.55
+
+                        if app.aggiungi_giocatore(nome, ruolo, fanta_media, valore_mercato, presenze_stimate):
                             count += 1
                     except:
                         continue
@@ -262,47 +308,49 @@ else:
         
         html_campo = "<div class='campo-pro'>"
         
-        # 1. Attacco
+        def genera_card_giocatore(g, emoji_ruolo="⚽"):
+            t_index = round(g.get('titolarita', 0.9) * 10, 1)
+            bar_class = "titolarity-bar-green" if t_index >= 7.0 else "titolarity-bar-orange"
+            
+            return f"""
+            <div class='player-badge'>
+                <div class='titolarity-index'>{t_index}</div>
+                <div class='player-avatar'>{emoji_ruolo}</div>
+                <div class='player-name-pro'>{g['nome']}</div>
+                <div class='player-sub'>{g['ruolo']} • FM {g['fanta_media']}</div>
+                <div class='{bar_class}'></div>
+            </div>"""
+
+        # 1. Attacco (In alto)
         html_campo += "<div class='reparto-row'>"
         for g in formazione["Attacco"]:
-            html_campo += f"""
-            <div class='player-badge'>
-                <div class='player-avatar'>⚽</div>
-                <div class='player-name-pro'>{g['nome']}</div>
-                <div class='player-sub'>A • FM {g['fanta_media']}</div>
-            </div>"""
+            html_campo += genera_card_giocatore(g, "⚽")
         html_campo += "</div>"
 
         # 2. Centrocampo
         html_campo += "<div class='reparto-row'>"
         for g in formazione["Centrocampo"]:
-            html_campo += f"""
-            <div class='player-badge'>
-                <div class='player-avatar'>⚽</div>
-                <div class='player-name-pro'>{g['nome']}</div>
-                <div class='player-sub'>C • FM {g['fanta_media']}</div>
-            </div>"""
+            html_campo += genera_card_giocatore(g, "⚡")
         html_campo += "</div>"
 
         # 3. Difesa
         html_campo += "<div class='reparto-row'>"
         for g in formazione["Difesa"]:
-            html_campo += f"""
-            <div class='player-badge'>
-                <div class='player-avatar'>🛡️</div>
-                <div class='player-name-pro'>{g['nome']}</div>
-                <div class='player-sub'>D • FM {g['fanta_media']}</div>
-            </div>"""
+            html_campo += genera_card_giocatore(g, "🛡️")
         html_campo += "</div>"
 
-        # 4. Portiere
+        # 4. Portiere (In basso)
         html_campo += "<div class='reparto-row'>"
         for g in formazione["Portiere"]:
+            t_index = round(g.get('titolarita', 0.9) * 10, 1)
+            bar_class = "titolarity-bar-green" if t_index >= 7.0 else "titolarity-bar-orange"
             html_campo += f"""
             <div class='player-badge' style='border-color: #facc15;'>
+                <div class='titolarity-index'>{t_index}</div>
                 <div class='player-avatar'>🧤</div>
                 <div class='player-name-pro'>{g['nome']}</div>
                 <div class='player-sub' style='color: #facc15;'>P • FM {g['fanta_media']}</div>
+                <div class='{bar_class}'></div>
             </div>"""
         html_campo += "</div>"
 
@@ -321,6 +369,20 @@ else:
 
     with col_lato:
         st.subheader("💡 Consigli & Scambi")
-        with st.container(border=True):
-            for consiglio in app.genera_scambi():
-                st.markdown(consiglio)
+        scambi = app.genera_scambi()
+        if not scambi:
+            st.success("✅ Rosa in salute e ottimizzata!")
+        else:
+            for s in scambi:
+                st.markdown(f"""
+                <div class='trade-card'>
+                    <div style='display: flex; align-items: center; gap: 10px;'>
+                        <div style='background: #334155; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #64748b;'>👤</div>
+                        <div>
+                            <div style='font-weight: bold; font-size: 13px;'>{s['nome']} ({s['ruolo']})</div>
+                            <div style='font-size: 11px; color: #cbd5e1;'>{s['testo']}</div>
+                        </div>
+                    </div>
+                    <div style='font-size: 18px; cursor: pointer;' title='Proponi Scambio'>🔄</div>
+                </div>
+                """, unsafe_allow_html=True)
