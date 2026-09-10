@@ -1,10 +1,9 @@
 import streamlit as st
-import pandas as pd
 
 # Configurazione della pagina
 st.set_page_config(page_title="FantAlgoritmo - Formazione Titolare", layout="wide")
 
-# Intestazione superiore in stile Algo/FantaLab
+# Intestazione superiore
 st.markdown("""
     <div style="display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa; padding: 12px 20px; border-radius: 8px; border-bottom: 3px solid #2e7d32;">
         <h2 style="margin: 0; color: #1e293b; font-size: 20px;">⚽ FantAlgoritmo - Formazione Titolare</h2>
@@ -28,7 +27,7 @@ with col_f2:
 col_campo, col_panchina = st.columns([2, 1])
 
 with col_campo:
-    # Intestazione del campo con modulo dinamico
+    # Intestazione del campo
     st.markdown(f"""
         <div style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); padding: 12px 15px; border-radius: 12px 12px 0 0; border: 2px solid #155724; border-bottom: none; display: flex; align-items: center; color: white;">
             <span style="font-size: 18px; margin-right: 8px;">🏟️</span>
@@ -36,84 +35,117 @@ with col_campo:
         </div>
     """, unsafe_allow_html=True)
 
-    # Sfondo verde del campo da calcio con i giocatori reali (sostituisci i nomi con quelli della tua rosa)
+    # Contenitore verde del campo
     st.markdown("""
         <div style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); padding: 20px; border-radius: 0 0 12px 12px; border: 2px solid #155724; border-top: none; margin-bottom: 20px;">
-            
-            <div style="text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin-bottom: 8px; letter-spacing: 1px;">ATTACCO</div>
-            <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 25px;">
-                <div style="background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; text-align: center; width: 100px;">
-                    <div style="font-size: 24px;">👤</div>
-                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Tuo Giocatore 1</div>
-                    <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 4px 0;"></div>
-                    <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare</div>
-                </div>
-                <div style="background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; text-align: center; width: 100px;">
-                    <div style="font-size: 24px;">👤</div>
-                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Tuo Giocatore 2</div>
-                    <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 4px 0;"></div>
-                    <div style="color: #fb923c; font-size: 10px; font-weight: bold;">🟠 Ballottaggio</div>
-                </div>
-                <div style="background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; text-align: center; width: 100px;">
-                    <div style="font-size: 24px;">👤</div>
-                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Tuo Giocatore 3</div>
-                    <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 4px 0;"></div>
-                    <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare</div>
-                </div>
-            </div>
-
-            <div style="text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin-bottom: 8px; letter-spacing: 1px;">CENTROCAMPO</div>
-            <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 25px;">
-                <div style="background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 8px; text-align: center; width: 90px;">
-                    <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">CC 1</div>
-                    <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                    <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-                </div>
-                <div style="background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 8px; text-align: center; width: 90px;">
-                    <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">CC 2</div>
-                    <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                    <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-                </div>
-                <div style="background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 8px; text-align: center; width: 90px;">
-                    <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">CC 3</div>
-                    <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                    <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-                </div>
-                <div style="background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 8px; text-align: center; width: 90px;">
-                    <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">CC 4</div>
-                    <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 3px 0;"></div>
-                    <div style="color: #fb923c; font-size: 9px; font-weight: bold;">🟠 Ballottaggio</div>
-                </div>
-            </div>
-
-            <div style="text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin-bottom: 8px; letter-spacing: 1px;">DIFESA</div>
-            <div style="display: flex; justify-content: center; gap: 15px;">
-                <div style="background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 8px; text-align: center; width: 95px;">
-                    <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">DC 1</div>
-                    <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                    <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-                </div>
-                <div style="background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 8px; text-align: center; width: 95px;">
-                    <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">DC 2</div>
-                    <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                    <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-                </div>
-                <div style="background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 8px; text-align: center; width: 95px;">
-                    <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">DC 3</div>
-                    <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 3px 0;"></div>
-                    <div style="color: #fb923c; font-size: 9px; font-weight: bold;">🟠 Ballottaggio</div>
-                </div>
-            </div>
-
-        </div>
     """, unsafe_allow_html=True)
+    
+    # ATTACCO
+    st.markdown("<p style='text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin: 0 0 8px 0; letter-spacing: 1px;'>ATTACCO</p>", unsafe_allow_html=True)
+    att1, att2, att3 = st.columns(3)
+    
+    with att1:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 22px;">👤</div>
+                <div style="color: white; font-size: 11px; font-weight: bold;">Tuo Giocatore 1</div>
+                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 4px 0;"></div>
+                <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with att2:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 22px;">👤</div>
+                <div style="color: white; font-size: 11px; font-weight: bold;">Tuo Giocatore 2</div>
+                <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 4px 0;"></div>
+                <div style="color: #fb923c; font-size: 10px; font-weight: bold;">🟠 Ballottaggio</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with att3:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 22px;">👤</div>
+                <div style="color: white; font-size: 11px; font-weight: bold;">Tuo Giocatore 3</div>
+                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 4px 0;"></div>
+                <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # CENTROCAMPO
+    st.markdown("<p style='text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin: 20px 0 8px 0; letter-spacing: 1px;'>CENTROCAMPO</p>", unsafe_allow_html=True)
+    cc1, cc2, cc3, cc4 = st.columns(4)
+    
+    with cc1:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 18px;">👤</div>
+                <div style="color: white; font-size: 10px; font-weight: bold;">CC 1</div>
+                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
+                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with cc2:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 18px;">👤</div>
+                <div style="color: white; font-size: 10px; font-weight: bold;">CC 2</div>
+                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
+                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with cc3:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 18px;">👤</div>
+                <div style="color: white; font-size: 10px; font-weight: bold;">CC 3</div>
+                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
+                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with cc4:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 18px;">👤</div>
+                <div style="color: white; font-size: 10px; font-weight: bold;">CC 4</div>
+                <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 3px 0;"></div>
+                <div style="color: #fb923c; font-size: 9px; font-weight: bold;">🟠 Ballottaggio</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # DIFESA
+    st.markdown("<p style='text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin: 20px 0 8px 0; letter-spacing: 1px;'>DIFESA</p>", unsafe_allow_html=True)
+    d1, d2, d3 = st.columns(3)
+    
+    with d1:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 18px;">👤</div>
+                <div style="color: white; font-size: 10px; font-weight: bold;">DC 1</div>
+                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
+                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with d2:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 18px;">👤</div>
+                <div style="color: white; font-size: 10px; font-weight: bold;">DC 2</div>
+                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
+                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with d3:
+        st.markdown("""
+            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 18px;">👤</div>
+                <div style="color: white; font-size: 10px; font-weight: bold;">DC 3</div>
+                <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 3px 0;"></div>
+                <div style="color: #fb923c; font-size: 9px; font-weight: bold;">🟠 Ballottaggio</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with col_panchina:
     # Sezione Panchina con icona della sedia in legno (🪑)
@@ -125,7 +157,6 @@ with col_panchina:
             </div>
     """, unsafe_allow_html=True)
     
-    # Lista panchina reale
     panchina_giocatori = [
         ("Riserva 1 (P)", "6.17", "+10%"),
         ("Riserva 2 (D)", "6.33", "+10%"),
