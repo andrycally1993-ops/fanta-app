@@ -1,9 +1,10 @@
 import streamlit as st
+import pandas as pd
 
 # Configurazione della pagina
 st.set_page_config(page_title="FantAlgoritmo - Formazione Titolare", layout="wide")
 
-# Intestazione superiore
+# Intestazione superiore in stile Algo/FantaLab
 st.markdown("""
     <div style="display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa; padding: 12px 20px; border-radius: 8px; border-bottom: 3px solid #2e7d32;">
         <h2 style="margin: 0; color: #1e293b; font-size: 20px;">⚽ FantAlgoritmo - Formazione Titolare</h2>
@@ -27,7 +28,7 @@ with col_f2:
 col_campo, col_panchina = st.columns([2, 1])
 
 with col_campo:
-    # Intestazione del campo
+    # Intestazione del campo con modulo dinamico
     st.markdown(f"""
         <div style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); padding: 12px 15px; border-radius: 12px 12px 0 0; border: 2px solid #155724; border-bottom: none; display: flex; align-items: center; color: white;">
             <span style="font-size: 18px; margin-right: 8px;">🏟️</span>
@@ -35,80 +36,77 @@ with col_campo:
         </div>
     """, unsafe_allow_html=True)
 
-    # Sfondo verde del campo da calcio con omini e barre colorate (Verde = Titolare, Arancione = Ballottaggio)
+    # Sfondo verde del campo da calcio con i giocatori reali (sostituisci i nomi con quelli della tua rosa)
     st.markdown("""
         <div style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); padding: 20px; border-radius: 0 0 12px 12px; border: 2px solid #155724; border-top: none; margin-bottom: 20px;">
             
-            <!-- ATTACCO -->
             <div style="text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin-bottom: 8px; letter-spacing: 1px;">ATTACCO</div>
             <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 25px;">
                 <div style="background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; text-align: center; width: 100px;">
                     <div style="font-size: 24px;">👤</div>
-                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Kvaratskhelia</div>
+                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Tuo Giocatore 1</div>
                     <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 4px 0;"></div>
-                    <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare (+85%)</div>
+                    <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; text-align: center; width: 100px;">
                     <div style="font-size: 24px;">👤</div>
-                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Esposito F.P.</div>
+                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Tuo Giocatore 2</div>
                     <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 4px 0;"></div>
                     <div style="color: #fb923c; font-size: 10px; font-weight: bold;">🟠 Ballottaggio</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; text-align: center; width: 100px;">
                     <div style="font-size: 24px;">👤</div>
-                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Kean</div>
+                    <div style="color: white; font-size: 11px; font-weight: bold; white-space: nowrap;">Tuo Giocatore 3</div>
                     <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 4px 0;"></div>
-                    <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare (+80%)</div>
+                    <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare</div>
                 </div>
             </div>
 
-            <!-- CENTROCAMPO -->
             <div style="text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin-bottom: 8px; letter-spacing: 1px;">CENTROCAMPO</div>
             <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 25px;">
                 <div style="background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 8px; text-align: center; width: 90px;">
                     <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">Orsolini</div>
+                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">CC 1</div>
                     <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
                     <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 8px; text-align: center; width: 90px;">
                     <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">Mkhitaryan</div>
+                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">CC 2</div>
                     <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
                     <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 8px; text-align: center; width: 90px;">
                     <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">Barella</div>
+                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">CC 3</div>
                     <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
                     <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 8px; text-align: center; width: 90px;">
                     <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">Pulisic</div>
+                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">CC 4</div>
                     <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 3px 0;"></div>
                     <div style="color: #fb923c; font-size: 9px; font-weight: bold;">🟠 Ballottaggio</div>
                 </div>
             </div>
 
-            <!-- DIFESA -->
             <div style="text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin-bottom: 8px; letter-spacing: 1px;">DIFESA</div>
             <div style="display: flex; justify-content: center; gap: 15px;">
                 <div style="background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 8px; text-align: center; width: 95px;">
                     <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">Dimarco</div>
+                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">DC 1</div>
                     <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
                     <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 8px; text-align: center; width: 95px;">
                     <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">Gosens</div>
+                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">DC 2</div>
                     <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
                     <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 8px; text-align: center; width: 95px;">
                     <div style="font-size: 20px;">👤</div>
-                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">Hernandez T.</div>
+                    <div style="color: white; font-size: 10px; font-weight: bold; white-space: nowrap;">DC 3</div>
                     <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 3px 0;"></div>
                     <div style="color: #fb923c; font-size: 9px; font-weight: bold;">🟠 Ballottaggio</div>
                 </div>
@@ -127,13 +125,14 @@ with col_panchina:
             </div>
     """, unsafe_allow_html=True)
     
+    # Lista panchina reale
     panchina_giocatori = [
-        ("Martinez Jo. (P)", "6.17", "+10%"),
-        ("Doekhi (D)", "6.33", "+10%"),
-        ("Scalvini (D)", "6.17", "+10%"),
-        ("Bastoni S. (D)", "6.00", "+5%"),
-        ("Akinsanmiro (C)", "6.25", "+15%"),
-        ("Jones C. (C)", "6.00", "+5%")
+        ("Riserva 1 (P)", "6.17", "+10%"),
+        ("Riserva 2 (D)", "6.33", "+10%"),
+        ("Riserva 3 (D)", "6.17", "+10%"),
+        ("Riserva 4 (D)", "6.00", "+5%"),
+        ("Riserva 5 (C)", "6.25", "+15%"),
+        ("Riserva 6 (C)", "6.00", "+5%")
     ]
     
     for nome, fm, bonus in panchina_giocatori:
@@ -145,14 +144,3 @@ with col_panchina:
         """, unsafe_allow_html=True)
         
     st.markdown("</div>", unsafe_allow_html=True)
-
-# Link rapidi alle fonti in basso
-st.markdown("---")
-st.markdown("""
-    <div style="text-align: center; font-size: 13px; color: #64748b;">
-        🔗 <b>Fonti Probabili Formazioni:</b> 
-        <a href="https://www.gazzetta.it" target="_blank" style="color: #2563eb; text-decoration: none; margin: 0 5px;">Gazzetta</a> | 
-        <a href="https://sport.sky.it" target="_blank" style="color: #2563eb; text-decoration: none; margin: 0 5px;">Sky Sport</a> | 
-        <a href="https://www.fantacalcio.it" target="_blank" style="color: #2563eb; text-decoration: none; margin: 0 5px;">Fantacalcio.it</a>
-    </div>
-""", unsafe_allow_html=True)
