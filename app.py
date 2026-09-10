@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
+import csv
 
 st.set_page_config(page_title="FantAlgoritmo Pro - FantaLab Style", page_icon="⚽", layout="wide")
 
@@ -9,17 +10,28 @@ class FantAlgoritmoPro:
         if 'giocatori' not in st.session_state:
             st.session_state.giocatori = []
 
-    def carica_da_excel(self, uploaded_file):
+    def carica_file(self, uploaded_file):
         try:
-            xls = pd.ExcelFile(uploaded_file)
-            df = pd.read_excel(uploaded_file, sheet_name=xls.sheet_names[0])
+            file_name = uploaded_file.name.lower()
             
+            if file_name.endswith(('.xlsx', '.xls')):
+                xls = pd.ExcelFile(uploaded_file)
+                df = pd.read_excel(uploaded_file, sheet_name=xls.sheet_names[0])
+            else:
+                stringa_dati = uploaded_file.getvalue().decode("utf-8", errors="ignore")
+                f = io.StringIO(stringa_dati)
+                sample = f.read(2048)
+                f.seek(0)
+                delimiter = ';' if ';' in sample else ','
+                df = pd.read_csv(f, delimiter=delimiter)
+
             col_mapping = {str(c).strip().lower(): c for c in df.columns}
             
             c_nome = next((col_mapping[c] for c in col_mapping if 'nome' in c or 'giocatore' in c), df.columns[0])
             c_ruolo = next((col_mapping[c] for c in col_mapping if 'ruolo' in c), None)
             c_fm = next((col_mapping[c] for c in col_mapping if 'fanta' in c or 'media' in c or 'fm' in c), None)
             c_val = next((col_mapping[c] for c in col_mapping if 'quotazione' in c or 'valore' in c or 'qt' in c), None)
+            c_foto = next((col_mapping[c] for c in col_mapping if 'foto' in c or 'img' in c or 'immagine' in c or 'url' in c), None)
             
             count = 0
             temp_giocatori = []
@@ -50,7 +62,17 @@ class FantAlgoritmoPro:
                     try: valore_mercato = int(float(str(riga[c_val]).replace(',', '.')))
                     except: pass
                 
-                avatar_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
+                # Cerca l'immagine reale dal file, altrimenti usa un'icona di default neutra
+                avatar_url = ""
+                if c_foto and c_foto in df.columns:
+                    val_foto = str(riga[c_foto]).strip()
+                    if val_foto and val_foto.lower() != "nan":
+                        avatar_url = val_foto
+                
+                if not avatar_url:
+                    # Avatar generico con sagoma o stile caricaturale pulito
+                    avatar_url = "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+
                 titolarita = 95.0 if fanta_media > 6.8 else (65.0 if fanta_media > 6.0 else 30.0)
                 
                 giocatore = {
@@ -105,7 +127,7 @@ class FantAlgoritmoPro:
 app = FantAlgoritmoPro()
 
 # ==========================================
-# STYLING CSS: CAMPO REALISTICO E BARRETTE PERCENTUALE
+# STYLING CSS
 # ==========================================
 st.markdown("""
 <style>
@@ -174,6 +196,9 @@ st.markdown("""
     border: 2px solid #ffffff;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .fl-avatar-img {
     width: 100%;
@@ -208,10 +233,10 @@ st.markdown("""
 # SIDEBAR
 with st.sidebar:
     st.header("📁 Gestione Rosa")
-    uploaded_file = st.file_uploader("Carica file Excel Leghe FC (.xlsx)", type=["xlsx", "xls"])
+    uploaded_file = st.file_uploader("Carica file Rosa (.xlsx, .csv)", type=["xlsx", "xls", "csv"])
 
     if uploaded_file is not None:
-        num = app.carica_da_excel(uploaded_file)
+        num = app.carica_file(uploaded_file)
         if num > 0:
             st.success(f"Caricati {num} calciatori correttamente!")
 
@@ -223,11 +248,10 @@ with st.sidebar:
 st.title("⚽ FantAlgoritmo - Formazione Titolare")
 
 if not st.session_state.giocatori:
-    st.info("👈 Carica il file Excel (`.xlsx`) dei calciatori dalla barra laterale per visualizzare il campo.")
+    st.info("👈 Carica il file della rosa dalla barra laterale per visualizzare il campo.")
 else:
     c1, c2, c3 = st.columns([2, 2, 2])
     with c1:
-        # Tutti i moduli di FantaLab inseriti nel selettore
         modulo_scelto = st.selectbox(
             "Modulo:", 
             ["3-4-3", "3-5-2", "4-3-3", "4-4-2", "4-5-1", "5-3-2", "5-4-1"]
