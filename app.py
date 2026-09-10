@@ -3,12 +3,16 @@ import streamlit.components.v1 as components
 import pandas as pd
 import random
 
-# Configurazione pagina widescreen in stile Lega FC & FantaLab
+# Configurazione pagina widescreen
 st.set_page_config(page_title="Algoritmo Fantacalcio Pro - Lega FC & FantaLab", layout="wide")
+
+# Inizializzazione dello Stato di Sessione per mantenere salvate tutte le leghe caricate
+if "leagues_storage" not in st.session_state:
+    st.session_state.leagues_storage = {}
 
 col_left, col_center, col_right = st.columns([1.2, 2.8, 1.2])
 
-# --- 1. COLONNA SINISTRA: GESTIONE LEGHE & MODULI ---
+# --- 1. COLONNA SINISTRA: GESTIONE LEGHE MULTIPLE & SALVATE ---
 with col_left:
     st.markdown("### 📁 Le Tue Leghe")
     uploaded_files = st.file_uploader(
@@ -17,28 +21,33 @@ with col_left:
         accept_multiple_files=True
     )
     
-    leagues_dict = {}
-    selected_league = "Nessuna Lega"
-    total_players = 0
-    df_attivo = pd.DataFrame()
-    
+    # Memorizza in modo permanente nel session_state i file caricati senza sovrascriverli
     if uploaded_files:
-        league_names = [f.name.split(".")[0] for f in uploaded_files]
+        for file in uploaded_files:
+            league_name = file.name.split(".")[0]
+            try:
+                df = pd.read_csv(file)
+                df.columns = [str(c).strip() for c in df.columns]
+                # Salvataggio persistente
+                st.session_state.leagues_storage[league_name] = df.to_dict(orient="records")
+            except Exception as e:
+                st.error(f"Errore nel file {league_name}: {e}")
+
+    # Se ci sono leghe salvate, mostra il selettore
+    if st.session_state.leagues_storage:
+        league_names = list(st.session_state.leagues_storage.keys())
         selected_league = st.selectbox("Seleziona Lega Attiva", league_names)
         
-        for file in uploaded_files:
-            if file.name.split(".")[0] == selected_league:
-                try:
-                    df = pd.read_csv(file)
-                    df.columns = [str(c).strip() for c in df.columns]
-                    df_attivo = df
-                    leagues_dict[selected_league] = df.to_dict(orient="records")
-                    total_players = len(df_attivo)
-                    st.success(f"Lega sincronizzata! ({total_players} giocatori)")
-                except Exception as e:
-                    st.error(f"Errore di lettura CSV: {e}")
+        current_players_data = st.session_state.leagues_storage[selected_league]
+        total_players = len(current_players_data)
+        df_attivo = pd.DataFrame(current_players_data)
+        st.success(f"Lega attiva: {selected_league} ({total_players} giocatori)")
     else:
-        st.info("Carica il file CSV della tua rosa per popolare il campo.")
+        selected_league = "Nessuna Lega"
+        current_players_data = []
+        total_players = 0
+        df_attivo = pd.DataFrame()
+        st.info("Carica uno o più file CSV: resteranno tutti salvati qui.")
 
     st.markdown("---")
     st.markdown("### ⚙️ Moduli & Filtri")
@@ -67,20 +76,16 @@ with col_right:
     st.markdown("#### 🔍 Algoritmo & Matchup")
     st.markdown("""
     * **Fonti:** Fantacalcio.it, Gazzetta, Sky, FantaLab.
-    * **Bonus / Malus Partita Odierna:** Calcolati in tempo reale in base allo stato di forma e all'avversario di giornata.
-    * **Cartellini & Espulsioni:** Monitoraggio rischio ammonizione ed espulsione per singolo match.
+    * **Partita Odierna:** Bonus, Malus, Ammonizioni ed Espulsioni aggiornati in tempo reale.
     """)
     st.success("Sincronizzato con Algoritmo Algo 🟢")
 
 
-# --- 2. COLONNA CENTRALE: CAMPO DA CALCIO E PANCHINA DETTAGLIATI ---
+# --- 2. COLONNA CENTRALE: CAMPO DA CALCIO E PANCHINA FANTALAB / LEGA FC ---
 with col_center:
-    players_data = leagues_dict.get(selected_league, []) if uploaded_files else []
-    
     def extract_player_info(p):
         keys = list(p.keys())
         
-        # Estrazione Nome
         nome = "Giocatore"
         for k in keys:
             if any(term in k.lower() for term in ["nome", "giocatore", "player", "calciatore"]):
@@ -91,7 +96,6 @@ with col_center:
         if nome == "Giocatore" and len(keys) > 1:
             nome = str(p[keys[1]])
                 
-        # Estrazione Ruolo
         ruolo = "C"
         for k in keys:
             if any(term in k.lower() for term in ["ruolo", "r", "pos", "role"]):
@@ -100,7 +104,6 @@ with col_center:
                     ruolo = val
                     break
                 
-        # Estrazione FantaMedia
         fm = 6.00
         for k in keys:
             if any(term in k.lower() for term in ["fm", "fantamedia", "media", "fvm"]):
@@ -110,7 +113,6 @@ with col_center:
                     pass
                 break
                 
-        # Estrazione Titolarità (%)
         tit = 80
         for k in keys:
             if any(term in k.lower() for term in ["tit", "prob", "titolari"]):
@@ -127,7 +129,7 @@ with col_center:
             "tit": tit
         }
 
-    processed_players = [extract_player_info(p) for p in players_data]
+    processed_players = [extract_player_info(p) for p in current_players_data]
 
     portieri = [p for p in processed_players if "P" in p["ruolo"] or "POR" in p["ruolo"]]
     difensori = [p for p in processed_players if "D" in p["ruolo"] or "DEF" in p["ruolo"]]
@@ -155,7 +157,7 @@ with col_center:
 
     def render_cards(lista):
         if not lista:
-            return '<div style="color: #aaa; font-size: 0.75rem; font-style: italic;">Nessun giocatore</div>'
+            return '<div style="color: #aaa; font-size: 0.75rem; font-style: italic; text-align:center;">Nessun giocatore in questo reparto</div>'
         
         h = ""
         for p in lista:
@@ -164,7 +166,7 @@ with col_center:
             tit = p["tit"]
             ruolo = p["ruolo"]
             
-            # --- CALCOLO SPECIFICO MATCH BY MATCH (BONUS, MALUS, AMMONIZIONE, ESPULSIONE) ---
+            # Calcolo metriche specifiche per la partita odierna
             if "A" in ruolo or "PC" in ruolo:
                 prob_bonus = int(min(85, max(15, (fm - 5.5) * 25 + random.randint(5, 15))))
                 prob_amm = int(random.uniform(10, 30))
@@ -177,8 +179,8 @@ with col_center:
                 prob_bonus = int(min(40, max(5, (fm - 5.5) * 15 + random.randint(0, 5))))
                 prob_amm = int(random.uniform(35, 60))
                 prob_esp = int(random.uniform(5, 12))
-            else: # Portiere
-                prob_bonus = int(random.uniform(5, 20)) # es. imbattibilità / rigore parato
+            else: 
+                prob_bonus = int(random.uniform(5, 20))
                 prob_amm = int(random.uniform(5, 15))
                 prob_esp = int(random.uniform(1, 4))
 
@@ -189,10 +191,10 @@ with col_center:
             <div class="fl-card">
                 <div class="fl-avatar">{iniziali}</div>
                 <div class="fl-name" title="{nome}">{nome}</div>
-                <div class="fl-stats" title="Probabilità Bonus / Malus Partita Odierna">⚽ {prob_bonus}% | 🟨 {prob_amm}%</div>
-                <div class="fl-fm" title="Rischio Espulsione e FantaMedia">🔴 {prob_esp}% | FM: {fm:.2f}</div>
+                <div class="fl-stats">⚽ {prob_bonus}% | 🟨 {prob_amm}%</div>
+                <div class="fl-fm">🔴 {prob_esp}% | FM: {fm:.2f}</div>
                 <div class="fl-bar-bg"><div class="fl-bar-fill" style="width: {tit}%; background-color: {color_bar};"></div></div>
-                <div class="fl-tit-text">{tit}% Titolare</div>
+                <div class="fl-tit-text">{tit}% Tit.</div>
             </div>
             """
         return h
@@ -215,9 +217,10 @@ with col_center:
             align-items: center;
             gap: 6px;
         }}
+        /* Stile Campo da Calcio Realistico FantaLab / Lega FC */
         .fl-field {{
-            background: linear-gradient(135deg, #1b4d3e 0%, #0d281e 100%);
-            border: 3px solid rgba(255, 255, 255, 0.85);
+            background: radial-gradient(circle, #1e5631 0%, #11381e 100%);
+            border: 3px solid rgba(255, 255, 255, 0.9);
             border-radius: 12px;
             position: relative;
             display: flex;
@@ -225,8 +228,8 @@ with col_center:
             justify-content: space-around;
             align-items: center;
             padding: 12px;
-            height: 500px;
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.7);
+            height: 520px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
             box-sizing: border-box;
         }}
         .fl-field::before {{
@@ -236,7 +239,7 @@ with col_center:
             left: 0;
             width: 100%;
             height: 2px;
-            background: rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.4);
         }}
         .fl-row {{
             display: flex;
@@ -245,14 +248,15 @@ with col_center:
             width: 100%;
             z-index: 2;
         }}
+        /* Card Giocatore Grafica Avanzata con Avatar */
         .fl-card {{
-            background: #161a1d;
+            background: #14181c;
             border: 1px solid #00ffcc;
             border-radius: 6px;
             padding: 3px 4px;
             text-align: center;
             width: 98px;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.7);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -260,7 +264,7 @@ with col_center:
         .fl-avatar {{
             width: 22px;
             height: 22px;
-            background: #222f3e;
+            background: #1e272e;
             border: 1px solid #00ffcc;
             border-radius: 50%;
             font-size: 0.5rem;
@@ -308,7 +312,7 @@ with col_center:
             color: #ccc;
         }}
         .fl-bench {{
-            background: #16191c;
+            background: #14171a;
             border: 1px solid #333;
             border-radius: 8px;
             padding: 10px;
@@ -344,4 +348,4 @@ with col_center:
     </div>
     """
 
-    components.html(fantalab_html, height=740, scrolling=True)
+    components.html(fantalab_html, height=760, scrolling=True)
