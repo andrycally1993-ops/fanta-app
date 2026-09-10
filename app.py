@@ -20,7 +20,7 @@ st.sidebar.header("⚙️ Gestione Squadre & Rosa Reale")
 
 with st.sidebar.expander("➕ Crea Nuova Squadra / Incolla Rosa"):
     nome_nuova = st.text_input("Nome della Squadra:")
-    st.info("Inserisci i giocatori separati da virgola per fare prima!")
+    st.info("Inserisci i giocatori separati da virgola!")
     
     por_text = st.text_area("Portieri (3):", "Maignan, Sportiello, Terracciano")
     dif_text = st.text_area("Difensori (8):", "Bastoni, Bremer, Dimarco, Buongiorno, Calabria, Hernandez, Di Lorenzo, Cambiaso")
@@ -51,13 +51,10 @@ rosa_attiva = st.session_state.squadre[squadra_selezionata]
 st.sidebar.markdown("---")
 st.sidebar.header("📋 Schieramento Titolari (Formazione)")
 
-# Scelta del modulo (es. 3-4-3, 3-5-2, 4-3-3, ecc.)
 modulo = st.sidebar.selectbox("Scegli Modulo:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
 
-# Selezione portiere titolare tra i portieri in rosa
 t_por = st.sidebar.selectbox("Portiere Titolare", rosa_attiva["POR"])
 
-# Selezione dinamicamente in base al modulo
 num_dif = int(modulo[0])
 num_cen = int(modulo[2])
 num_att = int(modulo[4])
@@ -66,19 +63,8 @@ t_dif = st.sidebar.multiselect(f"Difensori Titolari ({num_dif})", rosa_attiva["D
 t_cen = st.sidebar.multiselect(f"Centrocampisti Titolari ({num_cen})", rosa_attiva["CEN"], default=rosa_attiva["CEN"][:num_cen])
 t_att = st.sidebar.multiselect(f"Attaccanti Titolari ({num_att})", rosa_attiva["ATT"], default=rosa_attiva["ATT"][:num_att])
 
-# Validazione conteggi
-if len(t_dif) != num_dif or len(t_cen) != num_cen or len(t_att) != num_att:
-    st.sidebar.warning(f"Attenzione: seleziona esattamente {num_dif} difensori, {num_cen} centrocampisti e {num_att} attaccanti per il modulo {modulo}.")
-
-# Gestione riserve automatiche (quelli non scelti tra i titolari)
-riserve_por = [p for p in rosa_attiva["POR"] if p != t_por]
-riserve_dif = [d for d in rosa_attiva["DIF"] if d not in t_dif]
-riserve_cen = [c for c in rosa_attiva["CEN"] if c not in t_cen]
-riserve_att = [a for a in rosa_attiva["ATT"] if a not in t_att]
-
-# --- HTML / CSS PER IL CAMPO E LA DASHBOARD ---
-# Prepariamo le stringhe HTML per i reparti del campo in base ai titolari scelti
-def crea_card(nome, ruolo, tit="95%", b="15%", m="10%"):
+# Preparazione stringhe HTML per i reparti
+def crea_card(nome, tit="95%", b="15%", m="10%"):
     if not nome: nome = "Senza nome"
     return f"""
     <div class="player-card">
@@ -88,32 +74,42 @@ def crea_card(nome, ruolo, tit="95%", b="15%", m="10%"):
     </div>
     """
 
-html_por = crea_card(t_por, "POR", "99%", "5%", "10%")
-html_dif = "".join([crea_card(d, "DIF", "92%", "12%", "18%") for d in t_dif])
-html_cen = "".join([crea_card(c, "CEN", "90%", "25%", "20%") for c in t_cen])
-html_att = "".join([crea_card(a, "ATT", "95%", "50%", "12%") for a in t_att])
+html_por = crea_card(t_por, "99%", "5%", "10%")
+html_dif = "".join([crea_card(d, "92%", "12%", "18%") for d in t_dif])
+html_cen = "".join([crea_card(c, "90%", "25%", "20%") for c in t_cen])
+html_att = "".join([crea_card(a, "95%", "50%", "12%") for a in t_att])
 
-# Lista panchina HTML
+# Riserve automatiche per la panchina
+riserve_por = [p for p in rosa_attiva["POR"] if p != t_por]
+riserve_dif = [d for d in rosa_attiva["DIF"] if d not in t_dif]
+riserve_cen = [c for c in rosa_attiva["CEN"] if c not in t_cen]
+riserve_att = [a for a in rosa_attiva["ATT"] if a not in t_att]
+
 html_panchina = ""
-for p in riserve_por[:1]: html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{p} (POR)</strong><span class="bench-stats">Tit: 95% | <span class="bonus">B: 4%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 90%</span></div>'
-for d in riserve_dif[:3]: html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{d} (DIF)</strong><span class="bench-stats">Tit: 88% | <span class="bonus">B: 8%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 85%</span></div>'
-for c in riserve_cen[:3]: html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{c} (CEN)</strong><span class="bench-stats">Tit: 90% | <span class="bonus">B: 35%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 88%</span></div>'
-for a in riserve_att[:2]: html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{a} (ATT)</strong><span class="bench-stats">Tit: 85% | <span class="bonus">B: 45%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 87%</span></div>'
+for p in riserve_por[:1]: 
+    html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{p} (POR)</strong><span class="bench-stats">Tit: 95% | <span class="bonus">B: 4%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 90%</span></div>'
+for d in riserve_dif[:3]: 
+    html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{d} (DIF)</strong><span class="bench-stats">Tit: 88% | <span class="bonus">B: 8%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 85%</span></div>'
+for c in riserve_cen[:3]: 
+    html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{c} (CEN)</strong><span class="bench-stats">Tit: 90% | <span class="bonus">B: 35%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 88%</span></div>'
+for a in riserve_att[:2]: 
+    html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{a} (ATT)</strong><span class="bench-stats">Tit: 85% | <span class="bonus">B: 45%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 87%</span></div>'
 
-html_code = f"""
+# --- CODICE HTML/CSS PULITO (Senza f-string esterna per evitare conflitti) ---
+html_code = """
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <title>Lega FC - Dashboard Algoritmo</title>
     <style>
-        body {{ background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; }}
-        .header {{ display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 20px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
-        .container {{ display: flex; gap: 25px; }}
-        .field-container {{ flex: 2; background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 20px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .container { display: flex; gap: 25px; }
+        .field-container { flex: 2; background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
         
         /* Campo da calcio realistico */
-        .football-field {{
+        .football-field {
             position: relative;
             width: 100%;
             height: 700px;
@@ -128,7 +124,7 @@ html_code = f"""
             padding: 20px 0;
             box-sizing: border-box;
         }
-        .football-field::after {{
+        .football-field::after {
             content: '';
             position: absolute;
             top: 50%;
@@ -138,8 +134,8 @@ html_code = f"""
             background: rgba(255, 255, 255, 0.6);
         }
 
-        .row-players {{ display: flex; justify-content: center; gap: 15px; width: 100%; z-index: 2; flex-wrap: wrap; }}
-        .player-card {{ 
+        .row-players { display: flex; justify-content: center; gap: 15px; width: 100%; z-index: 2; flex-wrap: wrap; }
+        .player-card { 
             background: rgba(15, 23, 42, 0.92); 
             border: 1px solid #334155; 
             padding: 8px 10px; 
@@ -149,25 +145,25 @@ html_code = f"""
             text-align: center; 
             box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
         }
-        .player-card .p-name {{ display: block; font-weight: bold; color: #38bdf8; font-size: 13px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-        .stats-tag {{ font-size: 10px; color: #cbd5e1; display: block; font-weight: 600; }}
-        .bonus-malus {{ font-size: 9px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 3px; }}
-        .bonus {{ color: #4ade80; font-weight: bold; }}
-        .malus {{ color: #f87171; font-weight: bold; }}
+        .player-card .p-name { display: block; font-weight: bold; color: #38bdf8; font-size: 13px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stats-tag { font-size: 10px; color: #cbd5e1; display: block; font-weight: 600; }
+        .bonus-malus { font-size: 9px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 3px; }
+        .bonus { color: #4ade80; font-weight: bold; }
+        .malus { color: #f87171; font-weight: bold; }
 
-        .sidebar {{ flex: 1; display: flex; flex-direction: column; gap: 25px; }}
-        .card-box {{ background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
-        .bench-list {{ display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }}
-        .bench-item {{ background: #334155; padding: 10px 12px; border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }}
-        .bench-info {{ display: flex; flex-direction: column; gap: 2px; }}
-        .bench-stats {{ font-size: 11px; color: #94a3b8; }}
+        .sidebar { flex: 1; display: flex; flex-direction: column; gap: 25px; }
+        .card-box { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .bench-list { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }
+        .bench-item { background: #334155; padding: 10px 12px; border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .bench-info { display: flex; flex-direction: column; gap: 2px; }
+        .bench-stats { font-size: 11px; color: #94a3b8; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1 style="margin: 0; font-size: 22px;">Lega FC - Squadra: <span style="color: #38bdf8;">{squadra_selezionata}</span></h1>
-        <div style="font-size: 14px; color: #cbd5e1;">Modulo: <strong style="color: #38bdf8;">{modulo}</strong></div>
+        <h1 style="margin: 0; font-size: 22px;">Lega FC - Squadra: <span style="color: #38bdf8;">REPLACE_SQUADRA</span></h1>
+        <div style="font-size: 14px; color: #cbd5e1;">Modulo: <strong style="color: #38bdf8;">REPLACE_MODULO</strong></div>
     </div>
 
     <div class="container">
@@ -177,19 +173,19 @@ html_code = f"""
             <div class="football-field">
                 <!-- Portiere -->
                 <div class="row-players">
-                    {html_por}
+                    REPLACE_POR
                 </div>
                 <!-- Difensori -->
                 <div class="row-players">
-                    {html_dif}
+                    REPLACE_DIF
                 </div>
                 <!-- Centrocampisti -->
                 <div class="row-players">
-                    {html_cen}
+                    REPLACE_CEN
                 </div>
                 <!-- Attaccanti -->
                 <div class="row-players">
-                    {html_att}
+                    REPLACE_ATT
                 </div>
             </div>
         </div>
@@ -199,7 +195,7 @@ html_code = f"""
             <div class="card-box">
                 <h3 style="margin-top: 0;">Panchina & Riserve (🪑)</h3>
                 <div class="bench-list">
-                    {html_panchina}
+                    REPLACE_PANCHINA
                 </div>
             </div>
 
@@ -214,5 +210,14 @@ html_code = f"""
 </body>
 </html>
 """
+
+# Sostituzioni pulite dei segnaposto nel codice HTML
+html_code = html_code.replace("REPLACE_SQUADRA", squadra_selezionata)
+html_code = html_code.replace("REPLACE_MODULO", modulo)
+html_code = html_code.replace("REPLACE_POR", html_por)
+html_code = html_code.replace("REPLACE_DIF", html_dif)
+html_code = html_code.replace("REPLACE_CEN", html_cen)
+html_code = html_code.replace("REPLACE_ATT", html_att)
+html_code = html_code.replace("REPLACE_PANCHINA", html_panchina)
 
 components.html(html_code, height=840, scrolling=True)
