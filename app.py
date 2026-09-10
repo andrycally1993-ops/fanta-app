@@ -66,23 +66,26 @@ class GestoreFantacalcioCompleto:
         """
         is_valido, msg = self.valida_modulo(modulo_schierato)
         if not is_valido:
-            return msg
+            print(msg)
+            return False
 
         print(f"--- ANALISI FORMAZIONE CON MODULO: {modulo_schierato} ---")
         
         # Controllo reparti dal modulo (es. 3-4-3 -> Dif:3, Cen:4, Att:3)
         pezzi = [int(x) for x in modulo_schierato.split('-')]
-        richiesti = {"D": pezzi[0], "C": pezzi[1], "A": pezzi[2]}
+        richiesti = {"P": 1, "D": pezzi[0], "C": pezzi[1], "A": pezzi[2]}
         
-        # Conteggio ruoti schierati
+        # Conteggio ruoli schierati
         conteggio = {"P": 0, "D": 0, "C": 0, "A": 0}
         for g in titolari_schierati:
-            conteggio[g.ruolo] += 1
+            if g.ruolo in conteggio:
+                conteggio[g.ruolo] += 1
 
         # Verifica rispondenza numerica
-        if conteggio["P"] != 1 or conteggio["D"] != richiesti["D"] or conteggio["C"] != richiesti["C"] or conteggio["A"] != richiesti["A"]:
+        if conteggio["P"] != richiesti["P"] or conteggio["D"] != richiesti["D"] or conteggio["C"] != richiesti["C"] or conteggio["A"] != richiesti["A"]:
             print("⚠️ ERRORE: I giocatori schierati non corrispondono al modulo scelto!")
-            print(Richiesti vs Schierati...)
+            print(f"Richiesti -> Portieri: {richiesti['P']}, Difessori: {richiesti['D']}, Centrocampisti: {richiesti['C']}, Attaccanti: {richiesti['A']}")
+            print(f"Schierati -> Portieri: {conteggio['P']}, Difessori: {conteggio['D']}, Centrocampisti: {conteggio['C']}, Attaccanti: {conteggio['A']}")
             return False
 
         # Analisi indici di titolarità e fantavoti
@@ -93,7 +96,7 @@ class GestoreFantacalcioCompleto:
             print(f"[{g.ruolo}] {g.nome} | Indice Titolare: {g.indice_titolarita}% | Fantavoto stimato: {f_voto}")
 
         media_titolarita = titolarita_totale / len(titolari_schierati)
-        print(f"\n Indice di Affidabilità/Titolarità Medio della Formazione: {media_titolarita:.1f}%\n")
+        print(f"\n📈 Indice di Affidabilità/Titolarità Medio della Formazione: {media_titolarita:.1f}%\n")
         return True
 
 
@@ -114,7 +117,6 @@ if __name__ == "__main__":
     c4 = GiocatoreFantacalcio("McTominay", "C", 80)
     a1 = GiocatoreFantacalcio("Retegui", "A", 90)
     a2 = GiocatoreFantacalcio("Thuram", "A", 90)
-    a3 = GiocatoreFantacalcio("Lookman", "A", 85)
 
     # Simuliamo qualche bonus/malus per la giornata
     p1.aggiungi_evento("ammonizione")  # -0.5
@@ -122,5 +124,13 @@ if __name__ == "__main__":
     c1.aggiungi_evento("assist")       # +1
     a1.aggiungi_evento("gol_segnato")  # +3
 
-    # Mettiamo in campo un 3-5-2
-    formazione_titolare = [p1, d1, d2, d3, c1, c2, c3, c4, a1, a2] # Nota: qui mancherebbe un centrocampista per il 3-5-2, aggiungiamone un altro per testare correttamente!
+    # Mettiamo in campo un 3-4-2 (3 difensori, 4 centrocampisti, 2 attaccanti + 1 portiere = 10 titolari + portiere)
+    formazione_titolare = [p1, d1, d2, d3, c1, c2, c3, c4, a1, a2]
+
+    # Eseguiamo il test con il modulo ufficiale 3-4-2-1 oppure 3-5-2 correggendo il numero di giocatori
+    # Facciamo l'esempio con il 3-5-2 (1 Portiere, 3 Difessori, 5 Centrocampisti, 2 Attaccanti)
+    c5 = GiocatoreFantacalcio("Koopmeiners", "C", 90)
+    formazione_352_titolare = [p1, d1, d2, d3, c1, c2, c3, c4, c5, a1, a2]
+
+    # Testiamo la validazione e l'analisi
+    gestore.analizza_formazione("3-5-2", formazione_352_titolare)
