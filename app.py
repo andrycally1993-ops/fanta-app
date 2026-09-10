@@ -56,7 +56,9 @@ with col_right:
     indice_rosa_medio = 82.5
     if not df_attivo.empty:
         try:
-            indice_rosa_medio = round(df_attivo.select_dtypes(include=['number']).mean().mean(), 1)
+            num_cols = df_attivo.select_dtypes(include=['number']).columns
+            if len(num_cols) > 0:
+                indice_rosa_medio = round(df_attivo[num_cols].mean().mean(), 1)
         except:
             pass
             
@@ -65,7 +67,7 @@ with col_right:
     st.markdown("#### 🔍 Algoritmo & Matchup")
     st.markdown("""
     * **Fonti:** Fantacalcio.it, Gazzetta, Sky, FantaLab.
-    * **Bonus / Malus:** Aggiornati in tempo reale in base allo stato di forma e alle statistiche partita.
+    * **Bonus / Malus:** Aggiornati in tempo reale in base allo stato di forma.
     """)
     st.success("Sincronizzato con Algoritmo Algo 🟢")
 
@@ -82,13 +84,24 @@ with col_center:
                     return val if pd.notna(val) else default
         return default
 
-    # Separiamo i giocatori per ruolo presi dalla rosa totale
-    portieri = [p for p in players_data if str(get_val(p, ["ruolo", "r"], "")).upper() in ["P", "POR"]]
-    difensori = [p for p in players_data if str(get_val(p, ["ruolo", "r"], "")).upper() in ["D", "DEF"]]
-    centrocampisti = [p for p in players_data if str(get_val(p, ["ruolo", "r"], "")).upper() in ["C", "CEN"]]
-    attaccanti = [p for p in players_data if str(get_val(p, ["ruolo", "r"], "")).upper() in ["A", "ATT"]]
+    # Funzione flessibile per classificare i ruoli (supporta classici e Mantra)
+    portieri, difensori, centrocampisti, attaccanti = [], [], [], []
+    
+    for p in players_data:
+        r_str = str(get_val(p, ["ruolo", "r", "pos", "role"], "")).upper()
+        if "P" in r_str or "POR" in r_str:
+            portieri.append(p)
+        elif "D" in r_str or "DEF" in r_str or "ED" in r_str or "ES" in r_str:
+            difensori.append(p)
+        elif "C" in r_str or "CEN" in r_str or "M" in r_str or "E" in r_str or "W" in r_str or "T" in r_str:
+            centrocampisti.append(p)
+        elif "A" in r_str or "ATT" in r_str or "PC" in r_str:
+            attaccanti.append(p)
+        else:
+            # Fallback di sicurezza se il ruolo non è chiaro
+            centrocampisti.append(p)
 
-    # Estrazione dinamica in base al modulo selezionato (es. 3-4-3 -> 3 dif, 4 cen, 3 att)
+    # Estrazione dinamica in base al modulo selezionato
     try:
         mod_parts = modulo_scelto.split('-')
         n_def = int(mod_parts[0])
@@ -97,15 +110,12 @@ with col_center:
     except:
         n_def, n_mid, n_att = 3, 4, 3
 
-    # Titolari sul campo
     t_portieri = portieri[:1]
     t_difensori = difensori[:n_def]
     t_centrocampisti = centrocampisti[:n_mid]
     t_attaccanti = attaccanti[:n_att]
 
     tutti_titolari = t_portieri + t_difensori + t_centrocampisti + t_attaccanti
-    
-    # Tutti gli altri vanno in panchina
     panchinari = [p for p in players_data if p not in tutti_titolari]
 
     def render_legafc_cards(lista):
@@ -114,24 +124,34 @@ with col_center:
         
         h = ""
         for p in lista:
-            nome = get_val(p, ["nome", "giocatore", "player"], "Sconosciuto")
-            fm = float(get_val(p, ["fm", "fantamedia", "media"], 6.00))
-            tit = int(float(get_val(p, ["titolarità", "titolarita", "tit", "prob"], 80)))
-            ruolo = str(get_val(p, ["ruolo", "r"], "")).upper()
+            nome = get_val(p, ["nome", "giocatore", "player", "name"], "Sconosciuto")
+            fm_val = get_val(p, ["fm", "fantamedia", "media", "fvm"], 6.00)
+            try:
+                fm = float(str(fm_val).replace(',', '.'))
+            except:
+                fm = 6.00
+                
+            tit_val = get_val(p, ["titolarità", "titolarita", "tit", "prob", "%"], 80)
+            try:
+                tit = int(float(str(tit_val).replace('%', '').replace(',', '.')))
+            except:
+                tit = 80
+
+            ruolo = str(get_val(p, ["ruolo", "r", "pos"], "")).upper()
             
-            # Calcolo automatico dinamico di Bonus e Malus basato sull'algoritmo e sulla FantaMedia
-            if ruolo in ["A", "ATT"]:
-                bonus_val = round(max(0.1, (fm - 6.0) * 0.4 + random.uniform(0.2, 0.6)), 1)
+            # Calcolo automatico dinamico di Bonus e Malus
+            if "A" in ruolo or "PC" in ruolo:
+                bonus_val = round(max(0.1, (fm - 6.0) * 0.4 + 0.3), 1)
                 malus_val = round(random.uniform(0.0, 0.2), 1)
-            elif ruolo in ["C", "CEN"]:
-                bonus_val = round(max(0.05, (fm - 6.0) * 0.3 + random.uniform(0.1, 0.4)), 1)
+            elif "C" in ruolo or "M" in ruolo or "E" in ruolo or "W" in ruolo or "T" in ruolo:
+                bonus_val = round(max(0.05, (fm - 6.0) * 0.3 + 0.2), 1)
                 malus_val = round(random.uniform(0.1, 0.4), 1)
-            elif ruolo in ["D", "DEF"]:
-                bonus_val = round(max(0.0, (fm - 6.0) * 0.2 + random.uniform(0.0, 0.2)), 1)
+            elif "D" in ruolo:
+                bonus_val = round(max(0.0, (fm - 6.0) * 0.2 + 0.1), 1)
                 malus_val = round(random.uniform(0.2, 0.5), 1)
-            else: # Portiere
-                bonus_val = round(random.uniform(0.0, 0.3), 1)
-                malus_val = round(random.uniform(0.5, 1.2), 1)
+            else:
+                bonus_val = 0.1
+                malus_val = 0.8
 
             color_bar = "#2ecc71" if tit >= 70 else "#e67e22"
             
@@ -146,7 +166,6 @@ with col_center:
             """
         return h
 
-    # CSS e Layout Grafico identico a Lega FC
     legafc_html = f"""
     <style>
         .lf-wrapper {{
