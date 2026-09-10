@@ -19,6 +19,7 @@ class FantAlgoritmoPro:
             v_mercato = 10
             titolarita = 90.0
 
+        # URL per foto ritratto realistiche dei calciatori (Placeholder pulito ad alta definizione)
         avatar_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
 
         giocatore = {
@@ -38,7 +39,7 @@ class FantAlgoritmoPro:
     def calcola_formazione(self, modulo="3-4-3"):
         lista = st.session_state.giocatori
         
-        # ORDINAMENTO CRUCIALE: Prima per titolarità (chi gioca va in campo), poi per fantamedia
+        # Ordinamento: Prima per titolarità, poi per fantamedia
         portieri = sorted([g for g in lista if g["ruolo"] == 'P'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
         difensori = sorted([g for g in lista if g["ruolo"] == 'D'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
         centrocampisti = sorted([g for g in lista if g["ruolo"] == 'C'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
@@ -85,7 +86,7 @@ class FantAlgoritmoPro:
 app = FantAlgoritmoPro()
 
 # ==========================================
-# STYLING CSS "FANTALAB STYLE"
+# STYLING CSS "FANTALAB / LEGHE FC" STYLE
 # ==========================================
 st.markdown("""
 <style>
@@ -127,7 +128,7 @@ st.markdown("""
     flex-wrap: wrap;
 }
 .fl-card {
-    background: rgba(15, 23, 42, 0.92);
+    background: rgba(15, 23, 42, 0.95);
     border: 1px solid #334155;
     border-radius: 8px;
     padding: 6px 4px;
@@ -137,14 +138,18 @@ st.markdown("""
     position: relative;
 }
 .fl-avatar {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     margin: 0 auto 3px auto;
-    border: 2px solid #38bdf8;
     object-fit: cover;
     background-color: #1e293b;
 }
+/* Colori del bordo foto in base alla titolarità stile FantaLab */
+.border-green { border: 2px solid #22c55e; }
+.border-yellow { border: 2px solid #eab308; }
+.border-red { border: 2px solid #ef4444; }
+
 .fl-name {
     font-weight: 700;
     font-size: 11px;
@@ -155,7 +160,7 @@ st.markdown("""
 }
 .fl-sub {
     font-size: 9px;
-    color: #38bdf8;
+    color: #94a3b8;
     margin-top: 1px;
 }
 .fl-badge-score {
@@ -234,22 +239,21 @@ with st.sidebar:
                             try: valore_mercato = int(float(str(riga[idx_val]).replace(',', '.')))
                             except: pass
 
-                        # Gestione automatica titolarità di prova (es. Provedel panchinaro vs titolari)
+                        # Simulazione logica titolarità (es. Provedel panchinaro con indice basso)
                         nome_str = str(nome).lower()
                         if "provedel" in nome_str:
-                            titolarita = 15.0  # Panchinaro fisso
+                            titolarita = 15.0  # Panchinaro (bassa titolarità -> finisce in panchina)
                         elif fanta_media > 6.8:
-                            titolarita = 98.0  # Titolare top
+                            titolarita = 98.0  # Titolare sicuro
                         else:
-                        
-                            titolarita = 85.0  # Titolare standard
+                            titolarita = 80.0  # Titolare standard
 
                         if app.aggiungi_giocatore(nome, ruolo, fanta_media, valore_mercato, titolarita):
                             count += 1
                     except:
                         continue
             if count > 0:
-                st.success(f"Caricati {count} giocatori correttamente!")
+                st.success(f"Caricati {count} giocatori!")
         except Exception as e:
             st.error(f"Errore: {e}")
 
@@ -258,10 +262,10 @@ with st.sidebar:
         st.rerun()
 
 # INTERFACCIA PRINCIPALE
-st.title("⚽ FantAlgoritmo - Formazione Consigliata")
+st.title("⚽ FantAlgoritmo - Formazione Titolare")
 
 if not st.session_state.giocatori:
-    st.info("👈 Carica il tuo file CSV dalla barra laterale per visualizzare il campo e i consigli.")
+    st.info("👈 Carica il file CSV dalla barra laterale per visualizzare il campo.")
 else:
     c1, c2, c3 = st.columns([2, 2, 3])
     with c1:
@@ -282,31 +286,37 @@ else:
         html_campo = "<div class='campo-fantalab'>"
         
         def render_card(g):
-            tit_txt = f"{int(g.get('titolarita', 90))}%"
+            tit = g.get('titolarita', 90)
+            # Assegna la classe CSS del bordo foto in base alla percentuale stile FantaLab
+            if tit >= 75:
+                border_class = "border-green"
+            elif tit >= 40:
+                border_class = "border-yellow"
+            else:
+                border_class = "border-red"
+                
+            tit_txt = f"{int(tit)}%"
             return f"""
             <div class='fl-card'>
                 <div class='fl-badge-score'>{tit_txt}</div>
-                <img src='{g['avatar']}' class='fl-avatar' />
+                <img src='{g['avatar']}' class='fl-avatar {border_class}' />
                 <div class='fl-name'>{g['nome']}</div>
                 <div class='fl-sub'>{g['ruolo']} • {g['fanta_media']}</div>
             </div>"""
 
-        # Attacco
+        # Reparti sul campo
         html_campo += "<div class='reparto-line'>"
         for g in formazione["Attacco"]: html_campo += render_card(g)
         html_campo += "</div>"
 
-        # Centrocampo
         html_campo += "<div class='reparto-line'>"
         for g in formazione["Centrocampo"]: html_campo += render_card(g)
         html_campo += "</div>"
 
-        # Difesa
         html_campo += "<div class='reparto-line'>"
         for g in formazione["Difesa"]: html_campo += render_card(g)
         html_campo += "</div>"
 
-        # Portiere
         html_campo += "<div class='reparto-line'>"
         for g in formazione["Portiere"]: html_campo += render_card(g)
         html_campo += "</div>"
