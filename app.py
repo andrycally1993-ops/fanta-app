@@ -1,39 +1,68 @@
 import streamlit as st
-import csv
+import pandas as pd
 import io
 
-st.set_page_config(page_title="FantAlgoritmo Pro - FantaLab Style", page_icon="⚽", layout="wide")
+st.set_page_config(page_title="FantAlgoritmo Pro - Leghe FC Style", page_icon="⚽", layout="wide")
 
 class FantAlgoritmoPro:
     def __init__(self):
         if 'giocatori' not in st.session_state:
             st.session_state.giocatori = []
 
-    def aggiungi_giocatore(self, nome, ruolo, fanta_media, valore_mercato, titolarita_percentuale=100):
+    def carica_da_excel(self, uploaded_file):
         try:
-            f_media = float(str(fanta_media).strip().replace(',', '.')) if fanta_media else 6.5
-            v_mercato = int(float(str(valore_mercato).strip().replace(',', '.'))) if valore_mercato else 10
-            titolarita = float(str(titolarita_percentuale).strip().replace(',', '.'))
-        except (ValueError, TypeError):
-            f_media = 6.5
-            v_mercato = 10
-            titolarita = 90.0
-
-        avatar_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-
-        giocatore = {
-            "nome": str(nome).strip(),
-            "ruolo": str(ruolo).strip().upper(),
-            "fanta_media": f_media,
-            "valore_mercato": v_mercato,
-            "titolarita": titolarita, 
-            "avatar": avatar_url
-        }
-        
-        if not any(g['nome'].lower() == giocatore['nome'].lower() for g in st.session_state.giocatori):
-            st.session_state.giocatori.append(giocatore)
-            return True
-        return False
+            xls = pd.ExcelFile(uploaded_file)
+            df = pd.read_excel(uploaded_file, sheet_name=xls.sheet_names[0])
+            
+            # Normalizziamo i nomi delle colonne per trovarle facilmente
+            col_mapping = {str(c).strip().lower(): c for c in df.columns}
+            
+            # Cerca colonne chiave
+            c_nome = next((col_mapping[c] for c in col_mapping if 'nome' in c or 'giocatore' in c), df.columns[0])
+            c_ruolo = next((col_mapping[c] for c in col_mapping if 'ruolo' in c), df.columns[1] if len(df.columns) > 1 else None)
+            c_fm = next((col_mapping[c] for c in col_mapping if 'fanta' in c or 'media' in c or 'fm' in c), None)
+            c_val = next((col_mapping[c] for c in col_mapping if 'quotazione' in c or 'valore' in c or 'qt' in c), None)
+            
+            count = 0
+            st.session_state.giocatori = [] # Reset e carica la nuova rosa
+            
+            for _, riga in df.iterrows():
+                nome = str(riga[c_nome]).strip() if c_nome in df.columns else "Sconosciuto"
+                if not nome or nome == "nan": continue
+                
+                ruolo = "C"
+                if c_ruolo and c_ruolo in df.columns:
+                    r_cand = str(riga[c_ruolo]).strip().upper().replace('*', '')
+                    if r_cand in ['P', 'D', 'C', 'A']:
+                        ruolo = r_cand
+                
+                fanta_media = 6.5
+                if c_fm and c_fm in df.columns:
+                    try: fanta_media = float(str(riga[c_fm]).replace(',', '.'))
+                    except: pass
+                    
+                valore_mercato = 10
+                if c_val and c_val in df.columns:
+                    try: valore_mercato = int(float(str(riga[c_val]).replace(',', '.')))
+                    except: pass
+                
+                # Avatar predefinito pulito (può essere sostituito se il file ha foto)
+                avatar_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                
+                giocatore = {
+                    "nome": nome,
+                    "ruolo": ruolo,
+                    "fanta_media": fanta_media,
+                    "valore_mercato": valore_mercato,
+                    "titolarita": 90.0 if fanta_media > 6.5 else 70.0,
+                    "avatar": avatar_url
+                }
+                st.session_state.giocatori.append(giocatore)
+                count += 1
+            return count
+        except Exception as e:
+            st.error(f"Errore nella lettura del file Excel: {e}")
+            return 0
 
     def calcola_formazione(self, modulo="3-4-3"):
         lista = st.session_state.giocatori
@@ -66,288 +95,194 @@ class FantAlgoritmoPro:
         formazione["Panchina"] = panchina_p + panchina_d + panchina_c + panchina_a
         return formazione
 
-    def genera_scambi(self):
-        consigli = []
-        lista = st.session_state.giocatori
-        if len(lista) < 2:
-            return []
-        for i, g in enumerate(lista):
-            if g["titolarita"] < 40 and g["ruolo"] in ['C', 'A', 'P']:
-                partner = lista[(i + 1) % len(lista)]
-                consigli.append({
-                    "cedi": g,
-                    "prendi": partner,
-                    "testo": f"Bassa titolarità ({g['titolarita']}%). Consigliato scambio con {partner['nome']}"
-                })
-        return consigli[:3]
-
 app = FantAlgoritmoPro()
 
 # ==========================================
-# STYLING CSS "FANTALAB / LEGHE FC" BLU STYLE
+# STYLING CSS: CAMPO REALISTICO & CARD COMPATTE
 # ==========================================
 st.markdown("""
 <style>
 .stApp {
-    background-color: #1a233a;
+    background-color: #0e1726;
     color: #ffffff;
 }
-.campo-fantalab {
-    background: linear-gradient(135deg, #1b365d 0%, #12223b 50%, #0b1526 100%);
-    border: 2px solid rgba(59, 130, 246, 0.4);
-    border-radius: 16px;
-    padding: 25px 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+/* Stile Campo da Calcio Realistico */
+.campo-reale {
+    background: repeating-linear-gradient(
+        0deg,
+        #1e4d2b,
+        #1e4d2b 60px,
+        #245e35 60px,
+        #245e35 120px
+    );
+    border: 3px solid #ffffff;
+    border-radius: 12px;
+    padding: 20px 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     position: relative;
+    min-height: 580px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 600px;
 }
-.campo-fantalab::after {
+/* Linea di metà campo e cerchio centrale simulati in CSS */
+.campo-reale::before {
     content: "";
     position: absolute;
     top: 50%;
-    left: 5%;
-    width: 90%;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.15);
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.6);
 }
+.campo-reale::after {
+    content: "";
+    position: absolute;
+    top: calc(50% - 50px);
+    left: calc(50% - 50px);
+    width: 100px;
+    height: 100px;
+    border: 3px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+}
+
 .reparto-line {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    z-index: 2;
-    margin: 4px 0;
+    gap: 14px;
+    z-index: 5;
+    margin: 5px 0;
     flex-wrap: wrap;
 }
-.fl-card {
-    background: rgba(30, 48, 80, 0.9);
-    border: 1px solid #3b82f6;
-    border-radius: 10px;
-    padding: 6px 4px;
+
+/* Card Giocatore Compatta stile Leghe FC (Senza buchi, unita) */
+.leghefc-card {
+    background: #111827;
+    border: 2px solid #374151;
+    border-radius: 8px;
+    width: 88px;
     text-align: center;
-    width: 95px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    overflow: hidden;
     position: relative;
 }
-.fl-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    margin: 0 auto 3px auto;
-    object-fit: cover;
-    background-color: #2a4365;
+.card-header-lf {
+    background: #1f2937;
+    font-size: 9px;
+    font-weight: bold;
+    color: #9ca3af;
+    padding: 2px 0;
+    border-bottom: 1px solid #374151;
 }
-.border-green { border: 2px solid #22c55e; }
-.border-yellow { border: 2px solid #eab308; }
-.border-red { border: 2px solid #ef4444; }
-
-.fl-name {
+.card-body-lf {
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.lf-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 3px;
+    border: 2px solid #10b981;
+}
+.lf-name {
     font-weight: 700;
-    font-size: 11px;
+    font-size: 10px;
     color: #ffffff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 100%;
 }
-.fl-sub {
-    font-size: 9px;
-    color: #93c5fd;
-    margin-top: 1px;
-}
-.fl-badge-score {
-    position: absolute;
-    top: 3px;
-    right: 3px;
+.lf-info {
     font-size: 8px;
-    font-weight: bold;
-    color: #ffffff;
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid #60a5fa;
-    padding: 1px 3px;
-    border-radius: 3px;
-}
-.trade-box-fl {
-    background: rgba(30, 48, 80, 0.85);
-    border: 1px solid #3b82f6;
-    border-radius: 8px;
-    padding: 8px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    color: #d1d5db;
+    margin-top: 1px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# SIDEBAR
+# SIDEBAR PER CARICARE IL FILE EXCEL
 with st.sidebar:
-    st.header("📁 Gestione Rosa")
-    uploaded_file = st.file_uploader("Carica file CSV Leghe FC", type=["csv"])
+    st.header("📁 Carica Rosa Excel")
+    uploaded_file = st.file_uploader("Carica file .xlsx", type=["xlsx", "xls"])
 
     if uploaded_file is not None:
-        try:
-            stringa_dati = uploaded_file.getvalue().decode("utf-8", errors="ignore")
-            f = io.StringIO(stringa_dati)
-            sample = f.read(2048)
-            f.seek(0)
-            delimiter = ';' if ';' in sample else ','
-            
-            reader = csv.reader(f, delimiter=delimiter)
-            righe = list(reader)
-            count = 0
-            
-            if righe:
-                header = [str(h).strip().lower() for h in righe[0]]
-                idx_nome, idx_ruolo, idx_fm, idx_val = 0, 1, -1, -1
-                
-                for i, h in enumerate(header):
-                    if 'nome' in h or 'giocatore' in h: idx_nome = i
-                    elif 'ruolo' in h: idx_ruolo = i
-                    elif 'fanta' in h or 'media' in h or 'fm' in h: idx_fm = i
-                    elif 'quotazione' in h or 'valore' in h or 'qt' in h: idx_val = i
-
-                for riga in righe[1:]:
-                    if not riga or len(riga) < 2: continue
-                    try:
-                        nome = riga[idx_nome] if idx_nome < len(riga) else riga[0]
-                        ruolo = "C"
-                        for item in riga:
-                            item_clean = str(item).strip().upper().replace('*','')
-                            if item_clean in ['P', 'D', 'C', 'A']:
-                                ruolo = item_clean
-                                break
-                        if idx_ruolo < len(riga):
-                            r_cand = str(riga[idx_ruolo]).strip().upper().replace('*','')
-                            if r_cand in ['P', 'D', 'C', 'A']: ruolo = r_cand
-
-                        fanta_media = 6.5
-                        if idx_fm != -1 and idx_fm < len(riga):
-                            try: fanta_media = float(str(riga[idx_fm]).replace(',', '.'))
-                            except: pass
-
-                        valore_mercato = 15
-                        if idx_val != -1 and idx_val < len(riga):
-                            try: valore_mercato = int(float(str(riga[idx_val]).replace(',', '.')))
-                            except: pass
-
-                        nome_str = str(nome).lower()
-                        if "provedel" in nome_str:
-                            titolarita = 15.0
-                        elif fanta_media > 6.8:
-                            titolarita = 98.0
-                        else:
-                            titolarita = 80.0
-
-                        if app.aggiungi_giocatore(nome, ruolo, fanta_media, valore_mercato, titolarita):
-                            count += 1
-                    except:
-                        continue
-            if count > 0:
-                st.success(f"Caricati {count} giocatori!")
-        except Exception as e:
-            st.error(f"Errore: {e}")
+        num_caricati = app.carica_da_excel(uploaded_file)
+        if num_caricati > 0:
+            st.success(f"Caricati con successo {num_caricati} giocatori!")
 
     if st.button("🗑️ Svuota Rosa"):
         st.session_state.giocatori = []
         st.rerun()
 
 # INTERFACCIA PRINCIPALE
-st.title("⚽ FantAlgoritmo - Formazione Titolare")
+st.title("⚽ FantAlgoritmo - Formazione Leghe FC")
 
 if not st.session_state.giocatori:
-    st.info("👈 Carica il file CSV dalla barra laterale per visualizzare il campo.")
+    st.info("👈 Carica il file Excel (`.xlsx`) dalla barra laterale per visualizzare il campo e la formazione.")
 else:
     c1, c2, c3 = st.columns([2, 2, 3])
     with c1:
         modulo_scelto = st.selectbox("Modulo:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
     with c2:
-        st.metric(label="Affidabilità Rosa", value="8.4 / 10")
+        st.metric(label="Totale Calciatori in Rosa", value=len(st.session_state.giocatori))
     with c3:
-        st.write(f"**Rosa:** {len(st.session_state.giocatori)} Calciatori")
+        st.write("")
 
     formazione = app.calcola_formazione(modulo_scelto)
     st.markdown("---")
 
-    col_campo, col_scambi = st.columns([3, 2])
+    col_campo, col_panchina = st.columns([3, 2])
 
     with col_campo:
-        st.subheader(f"📋 Formazione Titolare ({modulo_scelto})")
+        st.subheader(f"🏟️ Campo da Gioco ({modulo_scelto})")
         
-        html_campo = "<div class='campo-fantalab'>"
+        # Generazione HTML del Campo Reale
+        html_campo = "<div class='campo-reale'>"
         
-        def render_card(g):
-            tit = g.get('titolarita', 90)
-            if tit >= 75:
-                border_class = "border-green"
-            elif tit >= 40:
-                border_class = "border-yellow"
-            else:
-                border_class = "border-red"
-                
-            tit_txt = f"{int(tit)}%"
+        def render_card_lf(g):
             return f"""
-            <div class='fl-card'>
-                <div class='fl-badge-score'>{tit_txt}</div>
-                <img src='{g['avatar']}' class='fl-avatar {border_class}' />
-                <div class='fl-name'>{g['nome']}</div>
-                <div class='fl-sub'>{g['ruolo']} • {g['fanta_media']}</div>
+            <div class='leghefc-card'>
+                <div class='card-header-lf'>{g['ruolo']} • {g['fanta_media']}</div>
+                <div class='card-body-lf'>
+                    <img src='{g['avatar']}' class='lf-avatar' />
+                    <div class='lf-name'>{g['nome']}</div>
+                    <div class='lf-info'>FM: {g['fanta_media']}</div>
+                </div>
             </div>"""
 
+        # Attacco
         html_campo += "<div class='reparto-line'>"
-        for g in formazione["Attacco"]: html_campo += render_card(g)
+        for g in formazione["Attacco"]: html_campo += render_card_lf(g)
         html_campo += "</div>"
 
+        # Centrocampo
         html_campo += "<div class='reparto-line'>"
-        for g in formazione["Centrocampo"]: html_campo += render_card(g)
+        for g in formazione["Centrocampo"]: html_campo += render_card_lf(g)
         html_campo += "</div>"
 
+        # Difesa
         html_campo += "<div class='reparto-line'>"
-        for g in formazione["Difesa"]: html_campo += render_card(g)
+        for g in formazione["Difesa"]: html_campo += render_card_lf(g)
         html_campo += "</div>"
 
+        # Portiere
         html_campo += "<div class='reparto-line'>"
-        for g in formazione["Portiere"]: html_campo += render_card(g)
+        for g in formazione["Portiere"]: html_campo += render_card_lf(g)
         html_campo += "</div>"
 
         html_campo += "</div>"
         st.markdown(html_campo, unsafe_allow_html=True)
 
-    with col_scambi:
-        st.subheader("🔄 Consigli di Scambio")
-        scambi = app.genera_scambi()
-        
-        if not scambi:
-            st.success("Nessun consiglio di scambio urgente.")
-        else:
-            for s in scambi:
-                cedente = s["cedi"]
-                acquirente = s["prendi"]
-                st.markdown(f"""
-                <div class='trade-box-fl'>
-                    <div style='text-align: center; width: 40px;'>
-                        <span style='font-size: 8px; color: #ef4444; font-weight: bold;'>CEDI</span>
-                        <img src='{cedente['avatar']}' style='width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ef4444;' />
-                        <div style='font-size: 8px; white-space: nowrap; overflow: hidden;'>{cedente['nome']}</div>
-                    </div>
-                    <div style='font-size: 14px; color: #93c5fd;'>➔</div>
-                    <div style='text-align: center; width: 40px;'>
-                        <span style='font-size: 8px; color: #22c55e; font-weight: bold;'>PRENDI</span>
-                        <img src='{acquirente['avatar']}' style='width: 30px; height: 30px; border-radius: 50%; border: 1px solid #22c55e;' />
-                        <div style='font-size: 8px; white-space: nowrap; overflow: hidden;'>{acquirente['nome']}</div>
-                    </div>
-                    <div style='flex-grow: 1; margin-left: 10px;'>
-                        <div style='font-size: 10px; font-weight: bold; color: #ffffff;'>Motivazione</div>
-                        <div style='font-size: 9px; color: #93c5fd;'>{s['testo']}</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
+    with col_panchina:
+        st.subheader("🪑 Panchina & Riserve")
         with st.container(border=True):
-            st.markdown("### 🪑 Panchina")
             if formazione["Panchina"]:
                 for p in formazione["Panchina"]:
-                    st.markdown(f"- **{p['nome']}** ({p['ruolo']}) - Titolarità: {int(p['titolarita'])}% (FM: {p['fanta_media']})")
+                    st.markdown(f"- **{p['nome']}** ({p['ruolo']}) - FM: {p['fanta_media']}")
             else:
                 st.write("Nessun panchinaro disponibile.")
