@@ -1,6 +1,6 @@
 import streamlit as st
 import csv
-io_module = __import__('io')
+import io
 
 class FantAlgoritmoV3_3:
     def __init__(self):
@@ -106,7 +106,7 @@ uploaded_file = st.sidebar.file_uploader("Scegli file CSV", type=["csv"])
 if uploaded_file is not None:
     try:
         stringa_dati = uploaded_file.getvalue().decode("utf-8")
-        f = io_module.StringIO(stringa_dati)
+        f = io.StringIO(stringa_dati)
         reader = csv.reader(f)
         count = 0
         for riga in reader:
@@ -128,7 +128,7 @@ st.subheader("📋 Stato Attuale Rosa")
 if not st.session_state.giocatori:
     st.info("👈 Usa il pannello a sinistra per caricare il file della tua rosa tramite il tasto di upload.")
 else:
-    st.write(Giocatori in rosa := f"Giocatori totali caricati: **{len(st.session_state.giocatori)}**")
+    st.write(f"Giocatori totali caricati: **{len(st.session_state.giocatori)}**")
     
     st.markdown("---")
     st.subheader("🤖 Motore di Calcolo")
