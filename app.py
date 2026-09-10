@@ -4,95 +4,119 @@ import streamlit.components.v1 as components
 # Configurazione della pagina Streamlit a schermo intero
 st.set_page_config(page_title="Lega FC - Dashboard", layout="wide")
 
-# --- GESTIONE DATI CON SESSION STATE ---
+# --- GESTIONE DATI ROSE COMPLETE (3 POR, 8 DIF, 8 CEN, 6 ATT) ---
 if "squadre" not in st.session_state:
     st.session_state.squadre = {
         "La Mia Squadra Principale": {
-            "POR": "Maignan",
-            "DIF": ["Bastoni", "Bremer", "Dimarco"],
-            "CEN": ["Barella", "Pulisic", "Koopmeiners", "Zaccagni"],
-            "ATT": ["Lautaro", "Thuram", "Retegui"]
+            "POR": ["Maignan", "Sportiello", "Terracciano"],
+            "DIF": ["Bastoni", "Bremer", "Dimarco", "Buongiorno", "Calabria", "Hernandez", "Di Lorenzo", "Cambiaso"],
+            "CEN": ["Barella", "Pulisic", "Koopmeiners", "Zaccagni", "Calhanoglu", "Zieliński", "McTominay", "Pellegrini"],
+            "ATT": ["Lautaro", "Thuram", "Retegui", "Lookman", "Dybala", "Dovbyk"]
         }
     }
 
-# --- BARRA LATERALE PER AGGIUNGERE SQUADRE E GIOCATORI REALI ---
-st.sidebar.header("⚙️ Gestione Squadre & Rosa")
+# --- BARRA LATERALE: GESTIONE RAPIDA SQUADRE E ROSE COMPLETE ---
+st.sidebar.header("⚙️ Gestione Squadre & Rosa Reale")
 
-with st.sidebar.form("form_aggiungi_squadra"):
-    st.subheader("Crea / Aggiungi Nuova Squadra")
+with st.sidebar.expander("➕ Crea Nuova Squadra / Incolla Rosa"):
     nome_nuova = st.text_input("Nome della Squadra:")
+    st.info("Inserisci i giocatori separati da virgola per fare prima!")
     
-    st.text_input_por = "Portiere (es. Svilar)"
-    por_input = st.text_input("Portiere Titolare:", "Svilar")
+    por_text = st.text_area("Portieri (3):", "Maignan, Sportiello, Terracciano")
+    dif_text = st.text_area("Difensori (8):", "Bastoni, Bremer, Dimarco, Buongiorno, Calabria, Hernandez, Di Lorenzo, Cambiaso")
+    cen_text = st.text_area("Centrocampisti (8):", "Barella, Pulisic, Koopmeiners, Zaccagni, Calhanoglu, Zieliński, McTominay, Pellegrini")
+    att_text = st.text_area("Attaccanti (6):", "Lautaro, Thuram, Retegui, Lookman, Dybala, Dovbyk")
     
-    st.markdown("---")
-    st.markdown("**Difensori (3)**")
-    d1_input = st.text_input("Difensore 1", "Buongiorno")
-    d2_input = st.text_input("Difensore 2", "Calabria")
-    d3_input = st.text_input("Difensore 3", "Hernandez")
-    
-    st.markdown("---")
-    st.markdown("**Centrocampisti (4)**")
-    c1_input = st.text_input("Centrocampista 1", "Calhanoglu")
-    c2_input = st.text_input("Centrocampista 2", "Zieliński")
-    c3_input = st.text_input("Centrocampista 3", "McTominay")
-    c4_input = st.text_input("Centrocampista 4", "Pellegrini")
-    
-    st.markdown("---")
-    st.markdown("**Attaccanti (3)**")
-    a1_input = st.text_input("Attaccante 1", "Lookman")
-    a2_input = st.text_input("Attaccante 2", "Dybala")
-    a3_input = st.text_input("Attaccante 3", "Dovbyk")
-    
-    submit_squadra = st.form_submit_button("➕ Salva e Aggiungi Squadra")
+    if st.button("Salva Rosa Completa"):
+        if nome_nuova:
+            st.session_state.squadre[nome_nuova] = {
+                "POR": [p.strip() for p in por_text.split(",")],
+                "DIF": [d.strip() for d in dif_text.split(",")],
+                "CEN": [c.strip() for c in cen_text.split(",")],
+                "ATT": [a.strip() for a in att_text.split(",")]
+            }
+            st.session_state.squadra_attiva = nome_nuova
+            st.sidebar.success(f"Rosa '{nome_nuova}' salvata con successo!")
+            st.rerun()
 
-if submit_squadra:
-    if nome_nuova:
-        st.session_state.squadre[nome_nuova] = {
-            "POR": por_input,
-            "DIF": [d1_input, d2_input, d3_input],
-            "CEN": [c1_input, c2_input, c3_input, c4_input],
-            "ATT": [a1_input, a2_input, a3_input]
-        }
-        st.sidebar.success(f"Squadra '{nome_nuova}' creata con successo!")
-        # Imposta la nuova squadra come quella selezionata salvandola nello state
-        st.session_state.squadra_attiva = nome_nuova
-        st.rerun()
-    else:
-        st.sidebar.error("Inserisci un nome valido per la squadra.")
-
-# Selezione della squadra attiva (mantiene la scelta o prende l'ultima aggiunta)
+# Selezione della squadra attiva
 lista_squadre = list(st.session_state.squadre.keys())
-default_index = len(lista_squadre) - 1 if "squadra_attiva" not in st.session_state else lista_squadre.index(st.session_state.get("squadra_attiva", lista_squadre[0]))
-
-squadra_selezionata = st.sidebar.selectbox("Seleziona Squadra Attiva:", lista_squadre, index=default_index)
+default_idx = len(lista_squadre) - 1 if "squadra_attiva" not in st.session_state else lista_squadre.index(st.session_state.get("squadra_attiva", lista_squadre[0]))
+squadra_selezionata = st.sidebar.selectbox("Seleziona Squadra Attiva:", lista_squadre, index=default_idx)
 st.session_state.squadra_attiva = squadra_selezionata
 
-rosa_corrente = st.session_state.squadre[squadra_selezionata]
+rosa_attiva = st.session_state.squadre[squadra_selezionata]
 
-por = rosa_corrente["POR"]
-d1, d2, d3 = rosa_corrente["DIF"]
-c1, c2, c3, c4 = rosa_corrente["CEN"]
-a1, a2, a3 = rosa_corrente["ATT"]
+# --- SCELTA MODULO E SCHIERAMENTO TITOLARI DALLA ROSA ---
+st.sidebar.markdown("---")
+st.sidebar.header("📋 Schieramento Titolari (Formazione)")
 
-# --- CODICE HTML/CSS PER IL CAMPO E LA DASHBOARD ---
-html_code = """
+# Scelta del modulo (es. 3-4-3, 3-5-2, 4-3-3, ecc.)
+modulo = st.sidebar.selectbox("Scegli Modulo:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
+
+# Selezione portiere titolare tra i portieri in rosa
+t_por = st.sidebar.selectbox("Portiere Titolare", rosa_attiva["POR"])
+
+# Selezione dinamicamente in base al modulo
+num_dif = int(modulo[0])
+num_cen = int(modulo[2])
+num_att = int(modulo[4])
+
+t_dif = st.sidebar.multiselect(f"Difensori Titolari ({num_dif})", rosa_attiva["DIF"], default=rosa_attiva["DIF"][:num_dif])
+t_cen = st.sidebar.multiselect(f"Centrocampisti Titolari ({num_cen})", rosa_attiva["CEN"], default=rosa_attiva["CEN"][:num_cen])
+t_att = st.sidebar.multiselect(f"Attaccanti Titolari ({num_att})", rosa_attiva["ATT"], default=rosa_attiva["ATT"][:num_att])
+
+# Validazione conteggi
+if len(t_dif) != num_dif or len(t_cen) != num_cen or len(t_att) != num_att:
+    st.sidebar.warning(f"Attenzione: seleziona esattamente {num_dif} difensori, {num_cen} centrocampisti e {num_att} attaccanti per il modulo {modulo}.")
+
+# Gestione riserve automatiche (quelli non scelti tra i titolari)
+riserve_por = [p for p in rosa_attiva["POR"] if p != t_por]
+riserve_dif = [d for d in rosa_attiva["DIF"] if d not in t_dif]
+riserve_cen = [c for c in rosa_attiva["CEN"] if c not in t_cen]
+riserve_att = [a for a in rosa_attiva["ATT"] if a not in t_att]
+
+# --- HTML / CSS PER IL CAMPO E LA DASHBOARD ---
+# Prepariamo le stringhe HTML per i reparti del campo in base ai titolari scelti
+def crea_card(nome, ruolo, tit="95%", b="15%", m="10%"):
+    if not nome: nome = "Senza nome"
+    return f"""
+    <div class="player-card">
+        <span class="p-name">{nome}</span>
+        <span class="stats-tag">Tit: {tit}</span>
+        <div class="bonus-malus"><span class="bonus">B: {b}</span> | <span class="malus">M: {m}</span></div>
+    </div>
+    """
+
+html_por = crea_card(t_por, "POR", "99%", "5%", "10%")
+html_dif = "".join([crea_card(d, "DIF", "92%", "12%", "18%") for d in t_dif])
+html_cen = "".join([crea_card(c, "CEN", "90%", "25%", "20%") for c in t_cen])
+html_att = "".join([crea_card(a, "ATT", "95%", "50%", "12%") for a in t_att])
+
+# Lista panchina HTML
+html_panchina = ""
+for p in riserve_por[:1]: html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{p} (POR)</strong><span class="bench-stats">Tit: 95% | <span class="bonus">B: 4%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 90%</span></div>'
+for d in riserve_dif[:3]: html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{d} (DIF)</strong><span class="bench-stats">Tit: 88% | <span class="bonus">B: 8%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 85%</span></div>'
+for c in riserve_cen[:3]: html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{c} (CEN)</strong><span class="bench-stats">Tit: 90% | <span class="bonus">B: 35%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 88%</span></div>'
+for a in riserve_att[:2]: html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{a} (ATT)</strong><span class="bench-stats">Tit: 85% | <span class="bonus">B: 45%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 87%</span></div>'
+
+html_code = f"""
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <title>Lega FC - Dashboard Algoritmo</title>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 20px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .container { display: flex; gap: 25px; }
-        .field-container { flex: 2; background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        body {{ background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; }}
+        .header {{ display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 20px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
+        .container {{ display: flex; gap: 25px; }}
+        .field-container {{ flex: 2; background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
         
         /* Campo da calcio realistico */
-        .football-field {
+        .football-field {{
             position: relative;
             width: 100%;
-            height: 680px;
+            height: 700px;
             background: linear-gradient(to bottom, #2e7d32, #1b5e20);
             border: 3px solid #ffffff;
             border-radius: 10px;
@@ -104,7 +128,7 @@ html_code = """
             padding: 20px 0;
             box-sizing: border-box;
         }
-        .football-field::after {
+        .football-field::after {{
             content: '';
             position: absolute;
             top: 50%;
@@ -114,68 +138,58 @@ html_code = """
             background: rgba(255, 255, 255, 0.6);
         }
 
-        .row-players { display: flex; justify-content: center; gap: 18px; width: 100%; z-index: 2; }
-        .player-card { 
+        .row-players {{ display: flex; justify-content: center; gap: 15px; width: 100%; z-index: 2; flex-wrap: wrap; }}
+        .player-card {{ 
             background: rgba(15, 23, 42, 0.92); 
             border: 1px solid #334155; 
-            padding: 10px 12px; 
+            padding: 8px 10px; 
             border-radius: 8px; 
-            font-size: 13px; 
-            width: 115px; 
+            font-size: 12px; 
+            width: 110px; 
             text-align: center; 
             box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
         }
-        .player-card .p-name { display: block; font-weight: bold; color: #38bdf8; font-size: 14px; margin-bottom: 4px; }
-        .stats-tag { font-size: 11px; color: #cbd5e1; display: block; font-weight: 600; }
-        .bonus-malus { font-size: 10px; margin-top: 5px; border-top: 1px solid #334155; padding-top: 4px; }
-        .bonus { color: #4ade80; font-weight: bold; }
-        .malus { color: #f87171; font-weight: bold; }
+        .player-card .p-name {{ display: block; font-weight: bold; color: #38bdf8; font-size: 13px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+        .stats-tag {{ font-size: 10px; color: #cbd5e1; display: block; font-weight: 600; }}
+        .bonus-malus {{ font-size: 9px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 3px; }}
+        .bonus {{ color: #4ade80; font-weight: bold; }}
+        .malus {{ color: #f87171; font-weight: bold; }}
 
-        .sidebar { flex: 1; display: flex; flex-direction: column; gap: 25px; }
-        .card-box { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .bench-list { display: flex; flex-direction: column; gap: 12px; }
-        .bench-item { background: #334155; padding: 12px 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
-        .bench-info { display: flex; flex-direction: column; gap: 2px; }
-        .bench-stats { font-size: 12px; color: #94a3b8; }
+        .sidebar {{ flex: 1; display: flex; flex-direction: column; gap: 25px; }}
+        .card-box {{ background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
+        .bench-list {{ display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }}
+        .bench-item {{ background: #334155; padding: 10px 12px; border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }}
+        .bench-info {{ display: flex; flex-direction: column; gap: 2px; }}
+        .bench-stats {{ font-size: 11px; color: #94a3b8; }}
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1 style="margin: 0; font-size: 24px;">Lega FC - Squadra: <span style="color: #38bdf8;">REPLACE_SQUADRA</span></h1>
+        <h1 style="margin: 0; font-size: 22px;">Lega FC - Squadra: <span style="color: #38bdf8;">{squadra_selezionata}</span></h1>
+        <div style="font-size: 14px; color: #cbd5e1;">Modulo: <strong style="color: #38bdf8;">{modulo}</strong></div>
     </div>
 
     <div class="container">
         <!-- CAMPO TITOLARI -->
         <div class="field-container">
-            <h3 style="margin-top: 0;">Formazione Consigliata (Titolari in Campo)</h3>
+            <h3 style="margin-top: 0;">Formazione Consigliata & Algoritmo (Stadio)</h3>
             <div class="football-field">
                 <!-- Portiere -->
                 <div class="row-players">
-                    <div class="player-card">
-                        <span class="p-name">REPLACE_POR</span>
-                        <span class="stats-tag">Tit: 99%</span>
-                        <div class="bonus-malus"><span class="bonus">B: 5%</span> | <span class="malus">M: 10%</span></div>
-                    </div>
+                    {html_por}
                 </div>
                 <!-- Difensori -->
                 <div class="row-players">
-                    <div class="player-card"><span class="p-name">REPLACE_D1</span><span class="stats-tag">Tit: 95%</span><div class="bonus-malus"><span class="bonus">B: 12%</span> | <span class="malus">M: 20%</span></div></div>
-                    <div class="player-card"><span class="p-name">REPLACE_D2</span><span class="stats-tag">Tit: 90%</span><div class="bonus-malus"><span class="bonus">B: 10%</span> | <span class="malus">M: 25%</span></div></div>
-                    <div class="player-card"><span class="p-name">REPLACE_D3</span><span class="stats-tag">Tit: 98%</span><div class="bonus-malus"><span class="bonus">B: 30%</span> | <span class="malus">M: 15%</span></div></div>
+                    {html_dif}
                 </div>
                 <!-- Centrocampisti -->
                 <div class="row-players">
-                    <div class="player-card"><span class="p-name">REPLACE_C1</span><span class="stats-tag">Tit: 92%</span><div class="bonus-malus"><span class="bonus">B: 22%</span> | <span class="malus">M: 25%</span></div></div>
-                    <div class="player-card"><span class="p-name">REPLACE_C2</span><span class="stats-tag">Tit: 96%</span><div class="bonus-malus"><span class="bonus">B: 42%</span> | <span class="malus">M: 10%</span></div></div>
-                    <div class="player-card"><span class="p-name">REPLACE_C3</span><span class="stats-tag">Tit: 88%</span><div class="bonus-malus"><span class="bonus">B: 35%</span> | <span class="malus">M: 18%</span></div></div>
-                    <div class="player-card"><span class="p-name">REPLACE_C4</span><span class="stats-tag">Tit: 85%</span><div class="bonus-malus"><span class="bonus">B: 28%</span> | <span class="malus">M: 22%</span></div></div>
+                    {html_cen}
                 </div>
                 <!-- Attaccanti -->
                 <div class="row-players">
-                    <div class="player-card"><span class="p-name">REPLACE_A1</span><span class="stats-tag">Tit: 100%</span><div class="bonus-malus"><span class="bonus">B: 65%</span> | <span class="malus">M: 15%</span></div></div>
-                    <div class="player-card"><span class="p-name">REPLACE_A2</span><span class="stats-tag">Tit: 95%</span><div class="bonus-malus"><span class="bonus">B: 55%</span> | <span class="malus">M: 12%</span></div></div>
-                    <div class="player-card"><span class="p-name">REPLACE_A3</span><span class="stats-tag">Tit: 90%</span><div class="bonus-malus"><span class="bonus">B: 50%</span> | <span class="malus">M: 10%</span></div></div>
+                    {html_att}
                 </div>
             </div>
         </div>
@@ -185,29 +199,14 @@ html_code = """
             <div class="card-box">
                 <h3 style="margin-top: 0;">Panchina & Riserve (🪑)</h3>
                 <div class="bench-list">
-                    <div class="bench-item">
-                        <div class="bench-info"><strong>Riserva 1 (POR)</strong><span class="bench-stats">Tit: 98% | <span class="bonus">B: 4%</span></span></div>
-                        <span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 92%</span>
-                    </div>
-                    <div class="bench-item">
-                        <div class="bench-info"><strong>Riserva 2 (DIF)</strong><span class="bench-stats">Tit: 90% | <span class="bonus">B: 8%</span></span></div>
-                        <span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 88%</span>
-                    </div>
-                    <div class="bench-item">
-                        <div class="bench-info"><strong>Riserva 3 (CEN)</strong><span class="bench-stats">Tit: 95% | <span class="bonus">B: 48%</span></span></div>
-                        <span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 95%</span>
-                    </div>
-                    <div class="bench-item">
-                        <div class="bench-info"><strong>Riserva 4 (ATT)</strong><span class="bench-stats">Tit: 85% | <span class="bonus">B: 58%</span></span></div>
-                        <span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 90%</span>
-                    </div>
+                    {html_panchina}
                 </div>
             </div>
 
             <div class="card-box">
                 <h3 style="margin-top: 0;">Indice Rosa & Algoritmo</h3>
-                <p style="font-size: 14px; color: #cbd5e1; margin-bottom: 10px;">Totale Indice Rosa: <strong>86.4 / 100</strong></p>
-                <p style="font-size: 13px; color: #94a3b8; margin: 0; line-height: 1.4;">Incrocio dati probabili formazioni: <strong>Affidabilità Massima</strong></p>
+                <p style="font-size: 14px; color: #cbd5e1; margin-bottom: 8px;">Totale Indice Rosa: <strong>88.2 / 100</strong></p>
+                <p style="font-size: 12px; color: #94a3b8; margin: 0; line-height: 1.4;">Incrocio fonti (Sky, Gazzetta, Fantacalcio): <strong>Affidabilità Massima</strong></p>
             </div>
         </div>
     </div>
@@ -216,18 +215,4 @@ html_code = """
 </html>
 """
 
-# Sostituzioni pulite nel codice HTML
-html_code = html_code.replace("REPLACE_SQUADRA", squadra_selezionata)
-html_code = html_code.replace("REPLACE_POR", por)
-html_code = html_code.replace("REPLACE_D1", d1)
-html_code = html_code.replace("REPLACE_D2", d2)
-html_code = html_code.replace("REPLACE_D3", d3)
-html_code = html_code.replace("REPLACE_C1", c1)
-html_code = html_code.replace("REPLACE_C2", c2)
-html_code = html_code.replace("REPLACE_C3", c3)
-html_code = html_code.replace("REPLACE_C4", c4)
-html_code = html_code.replace("REPLACE_A1", a1)
-html_code = html_code.replace("REPLACE_A2", a2)
-html_code = html_code.replace("REPLACE_A3", a3)
-
-components.html(html_code, height=820, scrolling=True)
+components.html(html_code, height=840, scrolling=True)
