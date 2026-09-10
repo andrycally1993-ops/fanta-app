@@ -62,18 +62,15 @@ class FantAlgoritmoPro:
                     try: valore_mercato = int(float(str(riga[c_val]).replace(',', '.')))
                     except: pass
                 
-                # Cerca l'immagine reale dal file, altrimenti usa un'icona di default neutra
                 avatar_url = ""
                 if c_foto and c_foto in df.columns:
                     val_foto = str(riga[c_foto]).strip()
                     if val_foto and val_foto.lower() != "nan":
                         avatar_url = val_foto
                 
-                if not avatar_url:
-                    # Avatar generico con sagoma o stile caricaturale pulito
-                    avatar_url = "https://cdn-icons-png.flaticon.com/512/149/149071.png"
-
                 titolarita = 95.0 if fanta_media > 6.8 else (65.0 if fanta_media > 6.0 else 30.0)
+                # Calcoliamo una percentuale di bonus stimata in base alla fanta-media e al ruolo
+                bonus_perc = int(min(max((fanta_media - 6.0) * 35 + (15 if ruolo == 'A' else 5), 5), 95))
                 
                 giocatore = {
                     "nome": nome,
@@ -81,6 +78,7 @@ class FantAlgoritmoPro:
                     "fanta_media": fanta_media,
                     "valore_mercato": valore_mercato,
                     "titolarita": titolarita,
+                    "bonus_perc": bonus_perc,
                     "avatar": avatar_url
                 }
                 temp_giocatori.append(giocatore)
@@ -127,7 +125,7 @@ class FantAlgoritmoPro:
 app = FantAlgoritmoPro()
 
 # ==========================================
-# STYLING CSS
+# STYLING CSS: CAMPO REALISTICO E CARD DETTAGLIATE
 # ==========================================
 st.markdown("""
 <style>
@@ -139,16 +137,16 @@ st.markdown("""
     background: repeating-linear-gradient(
         0deg,
         #1e4d2b,
-        #1e4d2b 60px,
-        #245e35 60px,
-        #245e35 120px
+        #1e4d2b 65px,
+        #245e35 65px,
+        #245e35 130px
     );
     border: 4px solid #ffffff;
-    border-radius: 14px;
-    padding: 30px 10px;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.7);
+    border-radius: 16px;
+    padding: 35px 15px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
     position: relative;
-    min-height: 640px;
+    min-height: 680px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -165,40 +163,44 @@ st.markdown("""
 .campo-reale::after {
     content: "";
     position: absolute;
-    top: calc(50% - 55px);
-    left: calc(50% - 55px);
-    width: 110px;
-    height: 110px;
+    top: calc(50% - 60px);
+    left: calc(50% - 60px);
+    width: 120px;
+    height: 120px;
     border: 3px solid rgba(255, 255, 255, 0.75);
     border-radius: 50%;
 }
 .reparto-line {
     display: flex;
     justify-content: center;
-    gap: 14px;
+    gap: 16px;
     z-index: 5;
-    margin: 6px 0;
+    margin: 8px 0;
     flex-wrap: wrap;
 }
 .fantalab-player-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 82px;
+    width: 90px;
     text-align: center;
+    position: relative;
 }
 .fl-avatar-container {
-    width: 52px;
-    height: 52px;
+    width: 58px;
+    height: 58px;
     border-radius: 50%;
     overflow: hidden;
-    background: #2a4365;
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
     border: 2px solid #ffffff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    margin-bottom: 3px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    margin-bottom: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 14px;
 }
 .fl-avatar-img {
     width: 100%;
@@ -207,26 +209,41 @@ st.markdown("""
 }
 .fl-player-name {
     font-weight: 700;
-    font-size: 10px;
+    font-size: 11px;
     color: #ffffff;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     width: 100%;
 }
 .bar-container {
-    width: 60px;
+    width: 70px;
     height: 5px;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.6);
     border-radius: 3px;
-    margin-top: 2px;
+    margin-top: 3px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.25);
 }
 .bar-fill-green { height: 100%; background: #22c55e; }
 .bar-fill-yellow { height: 100%; background: #eab308; }
 .bar-fill-red { height: 100%; background: #ef4444; }
+
+/* Etichetta Percentuale Bonus a fianco */
+.bonus-badge {
+    position: absolute;
+    top: -4px;
+    right: -2px;
+    background: #f59e0b;
+    color: #000000;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 6px;
+    border: 1px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -273,6 +290,8 @@ else:
         
         def render_player_card(g):
             tit = g.get('titolarita', 85)
+            bonus = g.get('bonus_perc', 50)
+            
             if tit >= 75:
                 bar_class = "bar-fill-green"
             elif tit >= 40:
@@ -280,11 +299,19 @@ else:
             else:
                 bar_class = "bar-fill-red"
                 
+            # Gestione immagine o iniziali se manca il link
+            if g['avatar']:
+                img_html = f"<img src='{g['avatar']}' class='fl-avatar-img' />"
+            else:
+                iniziali = "".join([n[0] for n in g['nome'].split()[:2]]).upper()
+                img_html = f"<span style='font-size: 13px; font-weight: bold;'>{iniziali}</span>"
+
             return f"""
             <div class='fantalab-player-card'>
                 <div class='fl-avatar-container'>
-                    <img src='{g['avatar']}' class='fl-avatar-img' />
+                    {img_html}
                 </div>
+                <div class='bonus-badge' title='Probabilità Bonus'>+{bonus}%</div>
                 <div class='fl-player-name'>{g['nome']}</div>
                 <div class='bar-container'>
                     <div class='{bar_class}' style='width: {int(tit)}%;'></div>
@@ -319,6 +346,6 @@ else:
         with st.container(border=True):
             if formazione["Panchina"]:
                 for p in formazione["Panchina"]:
-                    st.markdown(f"- **{p['nome']}** ({p['ruolo']}) - FM: {p['fanta_media']}")
+                    st.markdown(f"- **{p['nome']}** ({p['ruolo']}) - FM: {p['fanta_media']} | Bonus: +{p['bonus_perc']}%")
             else:
                 st.write("Nessun panchinaro disponibile.")
