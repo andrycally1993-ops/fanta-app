@@ -15,22 +15,59 @@ if "squadre" not in st.session_state:
         }
     }
 
-# --- BARRA LATERALE PER AGGIUNGERE SQUADRE ---
+# --- BARRA LATERALE PER AGGIUNGERE SQUADRE E GIOCATORI REALI ---
 st.sidebar.header("⚙️ Gestione Squadre & Rosa")
-nuova_squadra = st.sidebar.text_input("Nome Nuova Squadra:")
-if st.sidebar.button("➕ Aggiungi Squadra"):
-    if nuova_squadra and nuova_squadra not in st.session_state.squadre:
-        st.session_state.squadre[nuova_squadra] = {
-            "POR": "Portiere 1",
-            "DIF": ["Dif 1", "Dif 2", "Dif 3"],
-            "CEN": ["Cen 1", "Cen 2", "Cen 3", "Cen 4"],
-            "ATT": ["Att 1", "Att 2", "Att 3"]
-        }
-        st.sidebar.success(f"Squadra '{nuova_squadra}' aggiunta con successo!")
-        st.rerun()
 
-# Selezione della squadra attiva
-squadra_selezionata = st.sidebar.selectbox("Seleziona Squadra Attiva:", list(st.session_state.squadre.keys()))
+with st.sidebar.form("form_aggiungi_squadra"):
+    st.subheader("Crea / Aggiungi Nuova Squadra")
+    nome_nuova = st.text_input("Nome della Squadra:")
+    
+    st.text_input_por = "Portiere (es. Svilar)"
+    por_input = st.text_input("Portiere Titolare:", "Svilar")
+    
+    st.markdown("---")
+    st.markdown("**Difensori (3)**")
+    d1_input = st.text_input("Difensore 1", "Buongiorno")
+    d2_input = st.text_input("Difensore 2", "Calabria")
+    d3_input = st.text_input("Difensore 3", "Hernandez")
+    
+    st.markdown("---")
+    st.markdown("**Centrocampisti (4)**")
+    c1_input = st.text_input("Centrocampista 1", "Calhanoglu")
+    c2_input = st.text_input("Centrocampista 2", "Zieliński")
+    c3_input = st.text_input("Centrocampista 3", "McTominay")
+    c4_input = st.text_input("Centrocampista 4", "Pellegrini")
+    
+    st.markdown("---")
+    st.markdown("**Attaccanti (3)**")
+    a1_input = st.text_input("Attaccante 1", "Lookman")
+    a2_input = st.text_input("Attaccante 2", "Dybala")
+    a3_input = st.text_input("Attaccante 3", "Dovbyk")
+    
+    submit_squadra = st.form_submit_button("➕ Salva e Aggiungi Squadra")
+
+if submit_squadra:
+    if nome_nuova:
+        st.session_state.squadre[nome_nuova] = {
+            "POR": por_input,
+            "DIF": [d1_input, d2_input, d3_input],
+            "CEN": [c1_input, c2_input, c3_input, c4_input],
+            "ATT": [a1_input, a2_input, a3_input]
+        }
+        st.sidebar.success(f"Squadra '{nome_nuova}' creata con successo!")
+        # Imposta la nuova squadra come quella selezionata salvandola nello state
+        st.session_state.squadra_attiva = nome_nuova
+        st.rerun()
+    else:
+        st.sidebar.error("Inserisci un nome valido per la squadra.")
+
+# Selezione della squadra attiva (mantiene la scelta o prende l'ultima aggiunta)
+lista_squadre = list(st.session_state.squadre.keys())
+default_index = len(lista_squadre) - 1 if "squadra_attiva" not in st.session_state else lista_squadre.index(st.session_state.get("squadra_attiva", lista_squadre[0]))
+
+squadra_selezionata = st.sidebar.selectbox("Seleziona Squadra Attiva:", lista_squadre, index=default_index)
+st.session_state.squadra_attiva = squadra_selezionata
+
 rosa_corrente = st.session_state.squadre[squadra_selezionata]
 
 por = rosa_corrente["POR"]
@@ -38,7 +75,7 @@ d1, d2, d3 = rosa_corrente["DIF"]
 c1, c2, c3, c4 = rosa_corrente["CEN"]
 a1, a2, a3 = rosa_corrente["ATT"]
 
-# --- CODICE HTML/CSS (Senza f-string per evitare errori di sintassi CSS) ---
+# --- CODICE HTML/CSS PER IL CAMPO E LA DASHBOARD ---
 html_code = """
 <!DOCTYPE html>
 <html lang="it">
@@ -179,7 +216,7 @@ html_code = """
 </html>
 """
 
-# Sostituiamo i segnaposto in modo pulito senza conflitti di parentesi graffe
+# Sostituzioni pulite nel codice HTML
 html_code = html_code.replace("REPLACE_SQUADRA", squadra_selezionata)
 html_code = html_code.replace("REPLACE_POR", por)
 html_code = html_code.replace("REPLACE_D1", d1)
