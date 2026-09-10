@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Configurazione della pagina
+# Configurazione della pagina in modalità larga
 st.set_page_config(page_title="FantAlgoritmo - Formazione Titolare", layout="wide")
 
 st.title("⚽ FantAlgoritmo - Formazione Titolare")
@@ -22,13 +22,13 @@ if st.sidebar.button("Carica/Salva Rosa"):
             "indice_rosa": "8.6 / 10",
             "modulo": modulo_scelto,
             "titolari": [
-                {"nome": "Kvaratskhelia", "ruolo": "A", "perc": "98%", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Esposito F.P.", "ruolo": "A", "perc": "85%", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Kean", "ruolo": "A", "perc": "92%", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Bastoni", "ruolo": "D", "perc": "75%", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Mkhitaryan", "ruolo": "C", "perc": "80%", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Barella", "ruolo": "C", "perc": "90%", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Dimarco", "ruolo": "D", "perc": "95%", "foto": "https://via.placeholder.com/150"}
+                {"nome": "Kvaratskhelia", "ruolo": "A", "perc": "98%"},
+                {"nome": "Esposito F.P.", "ruolo": "A", "perc": "85%"},
+                {"nome": "Kean", "ruolo": "A", "perc": "92%"},
+                {"nome": "Bastoni", "ruolo": "D", "perc": "75%"},
+                {"nome": "Mkhitaryan", "ruolo": "C", "perc": "80%"},
+                {"nome": "Barella", "ruolo": "C", "perc": "90%"},
+                {"nome": "Dimarco", "ruolo": "D", "perc": "95%"}
             ],
             "panchina": [
                 {"nome": "Martinez Jo.", "ruolo": "P", "fm": "6.17", "bonus": "+10%"},
@@ -67,40 +67,44 @@ if st.session_state["formazioni_salvate"]:
     with col_campo:
         st.subheader(f"Campo Titolari ({dati['modulo']})")
         
-        # Contenitore con stile pulito per simulare il campo da gioco
-        with st.container():
-            st.markdown(
-                """
-                <style>
-                div.field-container {
-                    background-color: #2e7d32;
-                    padding: 20px;
-                    border-radius: 10px;
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 15px;
-                    justify-content: center;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
+        # HTML pulito e robusto per i cerchi dei titolari con pallino percentuale e ruolo
+        html_titolari = """
+        <div style="display: flex; flex-wrap: wrap; gap: 15px; background-color: #2e7d32; padding: 25px; border-radius: 12px; justify-content: center;">
+        """
+        
+        for t in dati["titolari"]:
+            html_titolari += f"""
+            <div style="text-align: center; color: white; margin: 8px;">
+                <div style="position: relative; width: 60px; height: 60px; margin: 0 auto;">
+                    <!-- Cerchio Avatar Giocatore -->
+                    <div style="border-radius: 50%; width: 60px; height: 60px; background: #ffffff; display: flex; align-items: center; justify-content: center; border: 2px solid #ffd700; box-shadow: 0px 4px 6px rgba(0,0,0,0.3);">
+                        <span style="font-size: 26px;">⚽</span>
+                    </div>
+                    <!-- Badge Percentuale in alto a destra -->
+                    <div style="position: absolute; top: -6px; right: -8px; background-color: #ffb300; color: black; font-size: 10px; font-weight: bold; padding: 2px 5px; border-radius: 20px; border: 1px solid white;">
+                        {t['perc']}
+                    </div>
+                    <!-- Badge Ruolo in basso -->
+                    <div style="position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); background-color: #1976d2; color: white; font-size: 9px; font-weight: bold; width: 22px; height: 18px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid white;">
+                        {t['ruolo']}
+                    </div>
+                </div>
+                <!-- Nome del giocatore -->
+                <div style="font-size: 12px; font-weight: bold; margin-top: 8px; white-space: nowrap; text-shadow: 1px 1px 2px black;">{t['nome']}</div>
+            </div>
+            """
             
-            # Utilizziamo le colonne native di Streamlit per disporre i giocatori ordinatamente
-            cols = st.columns(len(dati["titolari"]))
-            for idx, t in enumerate(dati["titolari"]):
-                with cols[idx]:
-                    st.image(t["foto"], width=60)
-                    st.markdown(f"<p style='text-align:center; font-size:11px; color:white; margin:0;'><b>{t['nome']}</b></p>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align:center; font-size:10px; color:#ffb300; margin:0;'>{t['perc']} ({t['ruolo']})</p>", unsafe_allow_html=True)
+        html_titolari += "</div>"
+        
+        st.markdown(html_titolari, unsafe_allow_html=True)
 
     with col_panchina:
         st.subheader("Panchina & Riserve")
         
-        # Visualizzazione pulita della panchina con FM e Bonus/Malus
+        # Visualizzazione pulita della panchina con FM e Bonus
         for p in dati["panchina"]:
             st.markdown(
-                f"<div style='font-size: 13px; border-bottom: 1px solid rgba(100,100,100,0.2); padding: 5px 0;'>"
+                f"<div style='font-size: 13px; border-bottom: 1px solid rgba(100,100,100,0.2); padding: 6px 0;'>"
                 f"• <b>{p['nome']}</b> ({p['ruolo']}) - FM: {p['fm']} | <span style='color: #2e7d32; font-weight:bold;'>Bonus: {p['bonus']}</span>"
                 f"</div>", 
                 unsafe_allow_html=True
