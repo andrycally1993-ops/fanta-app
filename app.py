@@ -9,11 +9,11 @@ class FantAlgoritmoV3_3:
 
     def aggiungi_giocatore(self, nome, ruolo, fanta_media, indice_partita, titolarita, bonus_malus_score, valore_mercato):
         try:
-            f_media = float(str(fanta_media).strip())
-            i_partita = int(str(indice_partita).strip())
-            titol = float(str(titolarita).strip())
-            b_malus = float(str(bonus_malus_score).strip())
-            v_mercato = int(str(valore_mercato).strip())
+            f_media = float(str(fanta_media).strip().replace(',', '.')) if fanta_media else 6.0
+            i_partita = int(float(str(indice_partita).strip().replace(',', '.'))) if indice_partita else 3
+            titol = float(str(titolarita).strip().replace(',', '.')) if titolarita else 0.8
+            b_malus = float(str(bonus_malus_score).strip().replace(',', '.')) if bonus_malus_score else 0.0
+            v_mercato = int(float(str(valore_mercato).strip().replace(',', '.'))) if valore_mercato else 1
         except (ValueError, TypeError):
             return False
 
@@ -31,7 +31,6 @@ class FantAlgoritmoV3_3:
             "score": round(score_schierabilita, 2)
         }
         
-        # Evita duplicati
         if not any(g['nome'].lower() == giocatore['nome'].lower() for g in st.session_state.giocatori):
             st.session_state.giocatori.append(giocatore)
             return True
@@ -98,24 +97,65 @@ st.title("⚽ FantAlgoritmo v3.3 - Smart Manager")
 app = FantAlgoritmoV3_3()
 
 st.sidebar.header("📁 Carica la tua Rosa")
-st.sidebar.write("Carica il file CSV della tua squadra con un click:")
+st.sidebar.write("Carica il file CSV esportato da Leghe Fantacalcio:")
 
-# TASTO UFFICIALE DI UPLOAD FILE
 uploaded_file = st.sidebar.file_uploader("Scegli file CSV", type=["csv"])
 
 if uploaded_file is not None:
     try:
-        stringa_dati = uploaded_file.getvalue().decode("utf-8")
+        stringa_dati = uploaded_file.getvalue().decode("utf-8", errors="ignore")
         f = io.StringIO(stringa_dati)
-        reader = csv.reader(f)
+        
+        # Determina il delimitatore ( virgola o punto e virgola )
+        sample = f.read(2048)
+        f.seek(0)
+        delimiter = ';' if ';' in sample else ','
+        
+        reader = csv.reader(f, delimiter=delimiter)
         count = 0
+        
         for riga in reader:
-            if not riga or riga[0].lower() in ['nome', 'giocatore']:
+            if not riga or len(riga) < 2:
                 continue
-            if len(riga) >= 7:
-                if app.aggiungi_giocatore(riga[0], riga[1], riga[2], riga[3], riga[4], riga[5], riga[6]):
-                    count += 1
-        st.sidebar.success(f"Caricati con successo {count} giocatori!")
+            
+            # Salta l'intestazione se contiene parole chiave
+            testo_riga = " ".join(str(x) for x in riga).lower()
+            if any(parola in testo_riga for keyword in ['nome', 'giocatore', 'ruolo', 'quotazione'] for parola in [keyword]):
+                continue
+            
+            # Estrazione flessibile (prende i dati principali anche se l'ordine cambia leggermente)
+            # Di solito in Leghe FC: [Nome, Ruolo, Squadra, FantaMedia/Qt, ...] o simili
+            nome = riga[0] if len(riga) > 0 else "Sconosciuto"
+            ruolo = riga[1] if len(riga) > 1 else "C"
+            
+            # Valori di default intelligenti se il file di Leghe non ha ancora i bonus/indici calcolati
+            fanta_media = 6.5
+            indice_partita = 2
+            titolarita = 0.85
+            bonus_malus = 0.0
+            valore_mercato = 10
+            
+            # Se ci sono più colonne nel CSV di Leghe, prova a estrarre dati reali
+            if len(riga) > 3:
+                for col in riga[2:]:
+                    col_str = str(col).strip().replace(',', '.')
+                    try:
+                        val = float(col_str)
+                        if 4.0 <= val <= 10.0 and fanta_media == 6.5:
+                            fanta_media = val
+                        elif val > 10 and valore_mercato == 10:
+                            valore_mercato = int(val)
+                    except:
+                        pass
+
+            if app.aggiungi_giocatore(nome, ruolo, fanta_media, indice_partita, titolarita, bonus_malus, valore_mercato):
+                count += 1
+                
+        if count > 0:
+            st.sidebar.success(f"Caricati con successo {count} giocatori dalla tua lega!")
+        else:
+            st.sidebar.warning("Nessun giocatore valido trovato. Controlla il formato del file.")
+            
     except Exception as e:
         st.sidebar.error(f"Errore nella lettura del file: {e}")
 
@@ -126,7 +166,7 @@ if st.sidebar.button("🗑️ Svuota Rosa"):
 # CORPO PRINCIPALE
 st.subheader("📋 Stato Attuale Rosa")
 if not st.session_state.giocatori:
-    st.info("👈 Usa il pannello a sinistra per caricare il file della tua rosa tramite il tasto di upload.")
+    st.info("👈 Carica il file CSV della tua squadra scaricato da Leghe Fantacalcio per iniziare.")
 else:
     st.write(f"Giocatori totali caricati: **{len(st.session_state.giocatori)}**")
     
