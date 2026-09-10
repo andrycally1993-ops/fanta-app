@@ -1,72 +1,49 @@
+import streamlit as st
 import csv
 import io
 
-class FantAlgoritmoV3_1:
+class FantAlgoritmoV3_2:
     def __init__(self, nome_squadra):
         self.nome_squadra = nome_squadra
-        self.giocatori = []
+        if 'giocatori' not in st.session_state:
+            st.session_state.giocatori = []
 
     def aggiungi_giocatore(self, nome, ruolo, fanta_media, indice_partita, titolarita, bonus_malus_score, valore_mercato):
-        """Aggiunge manualmente un singolo giocatore."""
-        score_schierabilita = ((fanta_media + bonus_malus_score) * titolarita) - (indice_partita * 0.3)
+        try:
+            f_media = float(str(fanta_media).strip())
+            i_partita = int(str(indice_partita).strip())
+            titol = float(str(titolarita).strip())
+            b_malus = float(str(bonus_malus_score).strip())
+            v_mercato = int(str(valore_mercato).strip())
+        except (ValueError, TypeError):
+            return False
+
+        # Formula Algoritmo v3.2
+        score_schierabilita = ((f_media + b_malus) * titol) - (i_partita * 0.3)
         
         giocatore = {
-            "nome": nome,
-            "ruolo": ruolo.upper(),
-            "fanta_media": float(fanta_media),
-            "indice_partita": int(indice_partita),
-            "titolarita": float(titolarita),
-            "bonus_malus_score": float(bonus_malus_score),
-            "valore_mercato": int(valore_mercato),
+            "nome": str(nome).strip(),
+            "ruolo": str(ruolo).strip().upper(),
+            "fanta_media": f_media,
+            "indice_partita": i_partita,
+            "titolarita": titol,
+            "bonus_malus_score": b_malus,
+            "valore_mercato": v_mercato,
             "score": round(score_schierabilita, 2)
         }
-        self.giocatori.append(giocatore)
-
-    def importa_da_csv(self, file_path_o_stringa, e_stringa=False):
-        """
-        IMPORTA LA ROSA DA UN FILE CSV (o stringa CSV).
-        Il formato delle colonne deve essere:
-        Nome,Ruolo,FantaMedia,IndicePartita,Titolarita,BonusMalus,ValoreMercato
-        Esempio riga: Lautaro,A,8.4,1,0.95,3.5,120
-        """
-        if e_stringa:
-            f = io.StringIO(file_path_o_stringa)
-            reader = csv.reader(f)
-        else:
-            try:
-                f = open(file_path_o_stringa, mode='r', encoding='utf-8')
-                reader = csv.reader(f)
-            except FileNotFoundError:
-                print(f"⚠️ File '{file_path_o_stringa}' non trovato. Impossibile importare.")
-                return
-
-        count = 0
-        for riga in reader:
-            # Salta righe vuote o l'intestazione
-            if not riga or riga[0].lower() in ['nome', 'giocatore']:
-                continue
-            if len(riga) >= 7:
-                self.aggiungi_giocatore(
-                    nome=riga[0].strip(),
-                    ruolo=riga[1].strip(),
-                    fanta_media=riga[2],
-                    indice_partita=riga[3],
-                    titolarita=riga[4],
-                    bonus_malus_score=riga[5],
-                    valore_mercato=riga[6]
-                )
-                count += 1
         
-        print(f"✅ Importati con successo {count} giocatori dalla rosa!\n")
-        if not e_stringa:
-            f.close()
+        # Evitiamo duplicati con lo stesso nome
+        if not any(g['nome'].lower() == giocatore['nome'].lower() for g in st.session_state.giocatori):
+            st.session_state.giocatori.append(giocatore)
+            return True
+        return False
 
     def calcola_formazione_automatica(self, modulo="3-4-3"):
-        """Seleziona automaticamente l'undici titolare e la panchina."""
-        portieri = sorted([g for g in self.giocatori if g["ruolo"] == 'P'], key=lambda x: x["score"], reverse=True)
-        difensori = sorted([g for g in self.giocatori if g["ruolo"] == 'D'], key=lambda x: x["score"], reverse=True)
-        centrocampisti = sorted([g for g in self.giocatori if g["ruolo"] == 'C'], key=lambda x: x["score"], reverse=True)
-        attaccanti = sorted([g for g in self.giocatori if g["ruolo"] == 'A'], key=lambda x: x["score"], reverse=True)
+        lista = st.session_state.giocatori
+        portieri = sorted([g for g in lista if g["ruolo"] == 'P'], key=lambda x: x["score"], reverse=True)
+        difensori = sorted([g for g in lista if g["ruolo"] == 'D'], key=lambda x: x["score"], reverse=True)
+        centrocampisti = sorted([g for g in lista if g["ruolo"] == 'C'], key=lambda x: x["score"], reverse=True)
+        attaccanti = sorted([g for g in lista if g["ruolo"] == 'A'], key=lambda x: x["score"], reverse=True)
 
         try:
             mod_parti = [int(x) for x in modulo.split("-")]
@@ -92,66 +69,110 @@ class FantAlgoritmoV3_1:
         return formazione
 
     def genera_consigli_scambi(self):
-        """Genera suggerimenti intelligenti sugli scambi in base alla rosa."""
         consigli = []
-        
+        lista = st.session_state.giocatori
+        if not lista:
+            return ["Aggiungi prima qualche giocatore per ricevere consigli sugli scambi!"]
+
         medie_reparti = {}
         for r, nome_r in [('P', 'Porta'), ('D', 'Difesa'), ('C', 'Centrocampo'), ('A', 'Attacco')]:
-            giocatori_reparto = [g["fanta_media"] for g in self.giocatori if g["ruolo"] == r]
+            giocatori_reparto = [g["fanta_media"] for g in lista if g["ruolo"] == r]
             medie_reparti[nome_r] = sum(giocatori_reparto) / len(giocatori_reparto) if giocatori_reparto else 0
 
         if medie_reparti:
             reparto_debole = min(medie_reparti, key=medie_reparti.get)
-            consigli.append(f"🎯 **Squilibrio di Rosa**: Il tuo reparto meno performante è la **{reparto_debole}** (Media voto: {round(medie_reparti[reparto_debole], 2)}). Cerca un rinforzo mirato qui.")
+            consigli.append(f"🎯 **Squilibrio di Rosa**: Il tuo reparto meno performante è la **{reparto_debole}** (Media: {round(medie_reparti[reparto_debole], 2)}). Cerca un rinforzo mirato.")
 
-        for g in self.giocatori:
+        for g in lista:
             if g["titolarita"] < 0.65 and g["valore_mercato"] > 25:
                 consigli.append(f"🔄 **Cessione Consigliata**: **{g['nome']} ({g['ruolo']})** ha un valore alto ({g['valore_mercato']}) ma titolarità critica ({int(g['titolarita']*100)}%). Monetizzalo.")
             elif g["fanta_media"] < 6.0 and g["ruolo"] in ['C', 'A'] and g["indice_partita"] > 3:
-                consigli.append(f"⚠️ **Valuta il Taglio/Scambio**: **{g['nome']}** sta faticando (Fanta-media {g['fanta_media']}). Usalo come esubero in uno scambio.")
+                consigli.append(f"⚠️ **Valuta il Taglio/Scambio**: **{g['nome']}** sta faticando (Fanta-media {g['fanta_media']}). Usalo come esubero.")
 
         return consigli
 
+
 # ==========================================
-# ESEMPIO DI UTILIZZO CON IMPORT CSV
+# INTERFACCIA GRAFICA STREAMLIT
 # ==========================================
-if __name__ == "__main__":
-    mia_squadra = FantAlgoritmoV3_1("FC Algoritmo Pro")
+st.title("⚽ FantAlgoritmo v3.2 - Gestione Rosa & Scambi")
 
-    # SIMULAZIONE DELL'IMPORT DELLA ROSA (es. copiato da un file CSV o esportato da Leghe FC)
-    # Formato: Nome, Ruolo, FantaMedia, DifficoltàPartita(1-5), Titolarità(0-1), BonusMalus, ValoreMercato
-    dati_csv_simulati = """Nome,Ruolo,FantaMedia,DifficoltàPartita,Titolarità,BonusMalus,ValoreMercato
-Maignan,P,6.3,1,0.95,0.5,35
-Sportiello,P,6.0,1,0.10,0.0,5
-Bastoni,D,6.6,2,0.90,0.4,28
-Dimarco,D,7.1,1,0.95,1.2,50
-Buongiorno,D,6.4,2,0.90,0.2,25
-Gatti,D,6.2,4,0.70,-0.2,15
-Pulisic,C,7.6,1,0.90,2.0,75
-Koopmeiners,C,7.3,2,0.95,1.5,80
-Colpani,C,6.5,3,0.80,0.5,25
-Zaccagni,C,6.8,2,0.85,0.8,40
-Lautaro,A,8.4,1,0.95,3.5,120
-Thuram,A,8.0,2,0.90,3.0,110
-Orsolini,A,7.0,4,0.75,1.0,35"""
+manager = FantAlgoritmoV3_2("Mia Squadra")
 
-    # Eseguiamo l'importazione automatica dalla stringa (puoi sostituire con il percorso del file es: 'rosa.csv')
-    mia_squadra.importa_da_csv(dati_csv_simulati, e_stringa=True)
+# Sidebar per la gestione dell'inserimento
+st.sidebar.header("⚙️ Gestione Rosa")
+modalita = st.sidebar.radio("Scegli come inserire i giocatori:", ["Inserimento Manuale (Tasto)", "Importa da CSV / Testo"])
 
-    # 1. Calcolo Formazione Automatica (es. Modulo 3-4-3)
-    modulo_scelto = "3-4-3"
-    formazione_ideale = mia_squadra.calcola_formazione_automatica(modulo_scelto)
+if modalita == "Inserimento Manuale (Tasto)":
+    st.sidebar.subheader("Aggiungi Giocatore a Mano")
+    with st.sidebar.form("form_giocatore"):
+        nome_i = st.text_input("Nome Giocatore")
+        ruolo_i = st.selectbox("Ruolo", ["P", "D", "C", "A"])
+        fanta_m_i = st.number_input("Fanta Media", min_value=0.0, max_value=15.0, value=6.5, step=0.1)
+        diff_i = st.slider("Difficoltà Partita (1-5)", 1, 5, 2)
+        titol_i = st.slider("Titolarità (0.0 - 1.0)", 0.0, 1.0, 0.9, 0.05)
+        bm_i = st.number_input("Bonus/Malus Score (+/-)", value=0.0, step=0.5)
+        val_i = st.number_input("Valore di Mercato / Crediti", min_value=1, value=15, step=1)
+        
+        submit_btn = st.form_submit_button("➕ Aggiungi alla Rosa")
+        if submit_btn and nome_i:
+            successo = manager.aggiungi_giocatore(nome_i, ruolo_i, fanta_m_i, diff_i, titol_i, bm_i, val_i)
+            if successo:
+                st.sidebar.success(f"Aggiunto {nome_i}!")
+            else:
+                st.sidebar.error("Giocatore già esistente o dati non validi.")
+
+else:
+    st.sidebar.subheader("Importa Lista")
+    testo_csv = st.sidebar.text_area("Incolla qui i dati CSV (Nome,Ruolo,FantaMedia,Diff,Titol,BonusMalus,Valore)", 
+                                     value="Lautaro,A,8.4,1,0.95,3.5,120\nPulisic,C,7.6,1,0.90,2.0,75\nDimarco,D,7.1,1,0.95,1.2,50")
+    if st.sidebar.button("📥 Carica Dati"):
+        f = io.StringIO(testo_csv)
+        reader = csv.reader(f)
+        count = 0
+        for riga in reader:
+            if len(riga) >= 7:
+                if manager.aggiungi_giocatore(riga[0], riga[1], riga[2], riga[3], riga[4], riga[5], riga[6]):
+                    count += 1
+        st.sidebar.success(encji := f"Importati {count} giocatori!")
+
+# Pulsante per resettare la rosa
+if st.sidebar.button("🗑️ Svuota Rosa"):
+    st.session_state.giocatori = []
+    st.sidebar.warning("Rosa svuotata.")
+
+# --- CORPO PRINCIPALE DELL'APP ---
+st.subheader("📋 La tua Rosa Attuale")
+if not st.session_state.giocatori:
+    st.info("La rosa è vuota. Usa il menu a sinistra per aggiungere i giocatori a mano o tramite importazione!")
+else:
+    # Mostriamo la tabella dei giocatori
+    st.write(f"Giocatori totali in rosa: **{len(st.session_state.giocatori)}**")
     
-    print(f"==================================================")
-    print(f" 📋 FORMAZIONE CONSIGLIATA - MODULO: {modulo_scelto}")
-    print(f"==================================================")
-    for reparto, giocatori in formazione_ideale.items():
-        print(f"\n🔹 **{reparto}**:")
-        for g in giocatori:
-            print(f"   - {g['nome']} | Score: {g['score']} (FantaM: {g['fanta_media']} | B/M: {g['bonus_malus_score']} | Titol.: {int(g['titolarita']*100)}%)")
+    # Scelta del modulo per la formazione
+    st.markdown("---")
+    st.subheader("🤖 Elaborazione Automatica")
+    modulo_scelto = st.selectbox("Seleziona il modulo tattico:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
+    
+    if st.button("⚡ Calcola Formazione e Consigli Scambi"):
+        formazione = manager.calcola_formazione_automatica(modulo_scelto)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown(f"### ⚽ Formazione Titolare ({modulo_scelto})")
+            for reparto, giocatori in formazione.items():
+                if reparto != "Panchina":
+                    st.markdown(f"**{reparto}:**")
+                    for g in giocatori:
+                        st.write(f"- **{g['nome']}** | Score: `{g['score']}` (FM: {g['fanta_media']} | Titol: {int(g['titolarita']*100)}%)")
+            
+            st.markdown("### 🏃‍♂️ Panchina Consigliata")
+            for g in formazione["Panchina"]:
+                st.write(f"- {g['nome']} ({g['ruolo']}) | Score: `{g['score']}`")
 
-    print(f"\n==================================================")
-    print(f" 🔄 CONSIGLI SCAMBI AUTOMATICI (VERSIONE 3.1)")
-    print(f"==================================================")
-    for consiglio in mia_squadra.genera_consigli_scambi():
-        print(f"* {consiglio}\n")
+        with col2:
+            st.markdown("### 🔄 Consigli Scambi (Algoritmo v3.2)")
+            consigli = manager.genera_consigli_scambi()
+            for consiglio in consigli:
+                st.warning(consiglio)
