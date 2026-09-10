@@ -230,7 +230,8 @@ with col_panchina:
                 
                 voto = 6.0
                 for ev in g["eventi"]:
-                    voto += TABELLA_MAL_BONUS = TABELLA_MALUS_BONUS[ev] if ev in TABELLA_MALUS_BONUS else 0
+                    if ev in TABELLA_MALUS_BONUS:
+                        voto += TABELLA_MALUS_BONUS[ev]
                 st.write(f"⭐ **Fantavoto Stimato:** `{voto}`")
                 
                 if st.button("🗑️ Rimuovi", key=f"del_grafica_{formazione_selezionata}_{idx}"):
