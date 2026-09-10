@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Configurazione della pagina in modalità larga
+# Configurazione della pagina
 st.set_page_config(page_title="FantAlgoritmo - Formazione Titolare", layout="wide")
 
 st.title("⚽ FantAlgoritmo - Formazione Titolare")
@@ -16,7 +16,7 @@ modulo_scelto = st.sidebar.selectbox("Seleziona Modulo Titolari", ["3-4-3", "4-3
 
 if st.sidebar.button("Carica/Salva Rosa"):
     if nome_nuova_rosa:
-        # Salviamo la rosa nel dizionario di sessione associata al nome inserito
+        # Salviamo la rosa nel dizionario di sessione
         st.session_state["formazioni_salvate"][nome_nuova_rosa] = {
             "totale_rosa": 25,
             "indice_rosa": "8.6 / 10",
@@ -67,42 +67,41 @@ if st.session_state["formazioni_salvate"]:
     with col_campo:
         st.subheader(f"Campo Titolari ({dati['modulo']})")
         
-        # Generazione pulita dell'HTML per i cerchi dei titolari con pallino percentuale e ruolo
-        html_titolari = """
-        <div style="display: flex; flex-wrap: wrap; gap: 15px; background-color: #2e7d32; padding: 20px; border-radius: 10px; justify-content: center;">
-        """
-        
-        for t in dati["titolari"]:
-            html_titolari += f"""
-            <div style="text-align: center; color: white; margin: 5px;">
-                <div style="position: relative; width: 65px; height: 65px; margin: 0 auto;">
-                    <div style="border-radius: 50%; width: 65px; height: 65px; overflow: hidden; border: 2px solid white; background: white;">
-                        <img src="{t['foto']}" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                    <div style="position: absolute; top: -5px; right: -5px; background-color: #ffb300; color: black; font-size: 10px; font-weight: bold; padding: 2px 5px; border-radius: 50px; border: 1px solid white;">
-                        {t['perc']}
-                    </div>
-                    <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background-color: #1976d2; color: white; font-size: 9px; font-weight: bold; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid white;">
-                        {t['ruolo']}
-                    </div>
-                </div>
-                <div style="font-size: 12px; font-weight: bold; margin-top: 5px; white-space: nowrap;">{t['nome']}</div>
-            </div>
-            """
+        # Contenitore con stile pulito per simulare il campo da gioco
+        with st.container():
+            st.markdown(
+                """
+                <style>
+                div.field-container {
+                    background-color: #2e7d32;
+                    padding: 20px;
+                    border-radius: 10px;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                    justify-content: center;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
             
-        html_titolari += "</div>"
-        
-        # Visualizzazione corretta dell'HTML tramite Streamlit
-        st.markdown(html_titolari, unsafe_allow_html=True)
+            # Utilizziamo le colonne native di Streamlit per disporre i giocatori ordinatamente
+            cols = st.columns(len(dati["titolari"]))
+            for idx, t in enumerate(dati["titolari"]):
+                with cols[idx]:
+                    st.image(t["foto"], width=60)
+                    st.markdown(f"<p style='text-align:center; font-size:11px; color:white; margin:0;'><b>{t['nome']}</b></p>", unsafe_allow_html=True)
+                    st.markdown(f"<p style='text-align:center; font-size:10px; color:#ffb300; margin:0;'>{t['perc']} ({t['ruolo']})</p>", unsafe_allow_html=True)
 
     with col_panchina:
         st.subheader("Panchina & Riserve")
         
-        # Visualizzazione della panchina con FM e Bonus/Malus
+        # Visualizzazione pulita della panchina con FM e Bonus/Malus
         for p in dati["panchina"]:
             st.markdown(
-                f"<div style='font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 4px 0;'>"
-                f"• <b>{p['nome']}</b> ({p['ruolo']}) - FM: {p['fm']} | <span style='color: #81c784;'>Bonus: {p['bonus']}</span>"
+                f"<div style='font-size: 13px; border-bottom: 1px solid rgba(100,100,100,0.2); padding: 5px 0;'>"
+                f"• <b>{p['nome']}</b> ({p['ruolo']}) - FM: {p['fm']} | <span style='color: #2e7d32; font-weight:bold;'>Bonus: {p['bonus']}</span>"
                 f"</div>", 
                 unsafe_allow_html=True
             )
