@@ -5,7 +5,7 @@ import pandas as pd
 # Configurazione della pagina in formato widescreen
 st.set_page_config(page_title="Algoritmo Fantacalcio Pro", layout="wide")
 
-# Suddivisione in 3 colonne principali: Sinistra (Leghe), Centrale (Campo e Panchina), Destra (Algoritmo e Statistiche)
+# Suddivisione in 3 colonne principali
 col_left, col_center, col_right = st.columns([1.2, 2.8, 1.2])
 
 # --- 1. COLONNA SINISTRA: CARICAMENTO FILE CSV LEGHE ---
@@ -19,7 +19,7 @@ with col_left:
     
     leagues_dict = {}
     selected_league = "Nessuna Lega Selezionata"
-    total_players = 25  # Default di esempio
+    total_players = 0
     
     if uploaded_files:
         league_names = [f.name.split(".")[0] for f in uploaded_files]
@@ -35,7 +35,7 @@ with col_left:
                 except Exception as e:
                     st.error("Errore nella lettura del file CSV.")
     else:
-        st.info("Carica i file CSV a sinistra per salvarli e gestirli.")
+        st.info("Carica i file CSV a sinistra per visualizzare la formazione sul campo.")
 
     st.markdown("---")
     st.markdown("### ⚙️ Filtri & Modulo")
@@ -52,7 +52,8 @@ with col_right:
     st.markdown("#### 🧠 Come funziona l'Algoritmo")
     st.markdown("""
     * **Fonti & Probabili Formazioni:** L'algoritmo aggrega e confronta i dati dei principali portali sportivi (Fantacalcio.it, Sky, Gazzetta, FantaLab) per stabilire l'affidabilità dei titolari.
-    * **Indice di Titolare (%):** * 🟢 **Barra Verde (>70%):** Titolare sicuro o fortemente consigliato.
+    * **Indice di Titolare (%):** 
+      * 🟢 **Barra Verde (>70%):** Titolare sicuro o fortemente consigliato.
       * 🟠 **Barra Arancione (<70%):** Giocatore in ballottaggio o a rischio panchina.
     * **Previsione Bonus / Malus:** Calcolata analizzando i dati di squadra, i rigoristi designati, i calci piazzati e la vulnerabilità della difesa avversaria (matchup).
     * **FantaMedia (FM):** Media voto ponderata che dà maggiore peso allo stato di forma delle **ultime 5 partite** rispetto all'intera stagione.
@@ -61,36 +62,23 @@ with col_right:
     st.success("Algoritmo Sincronizzato & Attivo 🟢")
 
 
-# --- 2. COLONNA CENTRALE: CAMPO DA CALCIO E PANCHINA STILE LEGA FC ---
+# --- 2. COLONNA CENTRALE: CAMPO DA CALCIO E PANCHINA SENZA DATI DI PROVA ---
 with col_center:
     players_data = leagues_dict.get(selected_league, []) if uploaded_files else []
     
-    # Suddivisione nei reparti per la grafica del campo
-    portieri = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["P","POR"]] or [
-        {"Nome": "Provedel", "Bonus": "⚽ 0", "Malus": "🥅 -1", "FM": "6.50", "Titolarità": 95}
-    ]
-    difensori = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["D","DEF"]] or [
-        {"Nome": "Dimarco", "Bonus": "⚽ +2", "Malus": "🟨 -0.5", "FM": "6.85", "Titolarità": 90},
-        {"Nome": "Bremer", "Bonus": "⚽ 0", "Malus": "🟨 -0.5", "FM": "6.40", "Titolarità": 98},
-        {"Nome": "Bastoni", "Bonus": "⚽ +1", "Malus": "🟥 -1", "FM": "6.30", "Titolarità": 65}
-    ]
-    centrocampisti = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["C","CEN"]] or [
-        {"Nome": "Pulisic", "Bonus": "⚽ +4", "Malus": "🟨 -0.5", "FM": "7.20", "Titolarità": 92},
-        {"Nome": "Koopmeiners", "Bonus": "⚽ +3", "Malus": "🟨 0", "FM": "7.05", "Titolarità": 95},
-        {"Nome": "Çalhanoğlu", "Bonus": "⚽ +5", "Malus": "🟨 -0.5", "FM": "7.40", "Titolarità": 99}
-    ]
-    attaccanti = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["A","ATT"]] or [
-        {"Nome": "Lautaro", "Bonus": "⚽ +8", "Malus": "🟨 0", "FM": "8.10", "Titolarità": 100},
-        {"Nome": "Thuram", "Bonus": "⚽ +6", "Malus": "🟨 -0.5", "FM": "7.75", "Titolarità": 95}
-    ]
-    panchinari = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["P","D","C","A"]][10:] or [
-        {"Nome": "Sommer", "Bonus": "⚽ 0", "Malus": "FM: 6.45", "Titolarità": 90},
-        {"Nome": "Pavard", "Bonus": "⚽ 0", "Malus": "FM: 6.30", "Titolarità": 85},
-        {"Nome": "Frattesi", "Bonus": "⚽ +2", "Malus": "FM: 6.60", "Titolarità": 45},
-        {"Nome": "Retegui", "Bonus": "⚽ +5", "Malus": "FM: 7.15", "Titolarità": 90}
-    ]
+    # Se non ci sono file caricati, le liste restano rigorosamente vuote
+    if players_data:
+        portieri = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["P","POR"]]
+        difensori = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["D","DEF"]]
+        centrocampisti = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["C","CEN"]]
+        attaccanti = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["A","ATT"]]
+        panchinari = [p for p in players_data if str(p.get("Ruolo","")).upper() in ["P","D","C","A"]][10:]
+    else:
+        portieri, difensori, centrocampisti, attaccanti, panchinari = [], [], [], [], []
 
     def make_cards(lista):
+        if not lista:
+            return '<div class="empty-slot">Vuoto</div>'
         h = ""
         for p in lista:
             nome = p.get("Nome", "Giocatore")
@@ -165,6 +153,15 @@ with col_center:
             width: 100%;
             z-index: 2;
         }}
+        /* Slot vuoto se non c'è CSV */
+        .empty-slot {{
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.75rem;
+            font-style: italic;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 4px;
+        }}
         /* Card Giocatore */
         .player-card {{
             background: rgba(15, 15, 15, 0.9);
@@ -234,6 +231,7 @@ with col_center:
     </style>
 
     <div class="wrapper">
+        <!-- Formazione Titolare con Stadio -->
         <div>
             <div class="section-title">🏟️ Formazione Titolare ({selected_league}) - Modulo: {modulo_scelto}</div>
             <div class="football-field">
@@ -244,6 +242,7 @@ with col_center:
             </div>
         </div>
 
+        <!-- Panchina con Sedia -->
         <div class="bench-box">
             <div class="section-title">🪑 Panchina & Riserve</div>
             <div class="bench-row">
