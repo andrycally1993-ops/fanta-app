@@ -17,16 +17,15 @@ modulo_scelto = st.sidebar.selectbox("Seleziona Modulo Titolari", ["3-4-3", "4-3
 
 if st.sidebar.button("Carica/Salva Rosa"):
     if nome_nuova_rosa:
-        # Salviamo la rosa nel dizionario di sessione senza cancellare le altre
+        # Salviamo la rosa nel dizionario di sessione (senza Kvaratskhelia e con i giocatori corretti)
         st.session_state["formazioni_salvate"][nome_nuova_rosa] = {
             "totale_rosa": 25,
             "indice_rosa": "8.6 / 10",
             "modulo": modulo_scelto,
             "titolari": [
-                {"nome": "Kvaratskhelia", "ruolo": "A", "perc": "98%", "colore_perc": "#4caf50", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Esposito F.P.", "ruolo": "A", "perc": "85%", "colore_perc": "#ff9800", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Kean", "ruolo": "A", "perc": "92%", "colore_perc": "#4caf50", "foto": "https://via.placeholder.com/150"},
-                {"nome": "Bastoni", "ruolo": "D", "perc": "75%", "colore_perc": "#ff9800", "foto": "https://via.placeholder.com/150"},
+                {"nome": "Malen", "ruolo": "A", "perc": "90%", "colore_perc": "#4caf50", "foto": "https://via.placeholder.com/150"},
+                {"nome": "Hojlund", "ruolo": "A", "perc": "100%", "colore_perc": "#4caf50", "foto": "https://via.placeholder.com/150"},
+                {"nome": "Martinez L.", "ruolo": "A", "perc": "100%", "colore_perc": "#4caf50", "foto": "https://via.placeholder.com/150"},
                 {"nome": "Mkhitaryan", "ruolo": "C", "perc": "80%", "colore_perc": "#ff9800", "foto": "https://via.placeholder.com/150"},
                 {"nome": "Barella", "ruolo": "C", "perc": "90%", "colore_perc": "#4caf50", "foto": "https://via.placeholder.com/150"},
                 {"nome": "Dimarco", "ruolo": "D", "perc": "95%", "colore_perc": "#4caf50", "foto": "https://via.placeholder.com/150"}
@@ -70,7 +69,7 @@ if st.session_state["formazioni_salvate"]:
     with col_campo:
         st.subheader(f"Campo Titolari ({dati['modulo']})")
         
-        # Generazione dell'HTML pulito con le foto, la percentuale e il badge colorato sotto/di fianco
+        # HTML ottimizzato con griglia flessibile e pulita per evitare sovrapposizioni o errori di layout
         html_campo = f"""
         <html>
         <head>
@@ -80,30 +79,32 @@ if st.session_state["formazioni_salvate"]:
                 margin: 0;
                 padding: 15px;
                 font-family: sans-serif;
-                border-radius: 10px;
+                border-radius: 12px;
             }}
             .field-grid {{
                 display: flex;
                 flex-wrap: wrap;
-                gap: 15px;
+                gap: 12px;
                 justify-content: center;
                 align-items: center;
             }}
             .player-card {{
                 text-align: center;
                 color: white;
-                position: relative;
-                width: 75px;
+                width: 85px;
+                background: rgba(0, 0, 0, 0.2);
+                padding: 8px;
+                border-radius: 8px;
             }}
             .avatar-container {{
                 position: relative;
-                width: 60px;
-                height: 60px;
+                width: 55px;
+                height: 55px;
                 margin: 0 auto;
             }}
             .avatar {{
-                width: 60px;
-                height: 60px;
+                width: 55px;
+                height: 55px;
                 border-radius: 50%;
                 object-fit: cover;
                 border: 2px solid white;
@@ -124,7 +125,7 @@ if st.session_state["formazioni_salvate"]:
             .player-name {{
                 font-size: 11px;
                 font-weight: bold;
-                margin-top: 4px;
+                margin-top: 6px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -132,10 +133,10 @@ if st.session_state["formazioni_salvate"]:
             .status-box {{
                 font-size: 9px;
                 font-weight: bold;
-                padding: 2px 4px;
+                padding: 2px 5px;
                 border-radius: 4px;
                 display: inline-block;
-                margin-top: 2px;
+                margin-top: 4px;
                 color: white;
             }}
         </style>
@@ -164,8 +165,8 @@ if st.session_state["formazioni_salvate"]:
         </html>
         """
         
-        # Renderizza il campo in modo sicuro tramite un componente HTML isolato (niente codice a schermo!)
-        components.html(html_campo, height=180, scrolling=False)
+        # Renderizza il campo in modo sicuro e pulito
+        components.html(html_campo, height=210, scrolling=False)
 
     with col_panchina:
         st.subheader("Panchina & Riserve")
