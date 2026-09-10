@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 # Configurazione della pagina Streamlit a schermo intero
 st.set_page_config(page_title="Lega FC - Dashboard", layout="wide")
 
-# --- GESTIONE DATI CON SESSION STATE (PER AGGIUNGERE SQUADRE E GIOCATORI) ---
+# --- GESTIONE DATI CON SESSION STATE ---
 if "squadre" not in st.session_state:
     st.session_state.squadre = {
         "La Mia Squadra Principale": {
@@ -15,7 +15,7 @@ if "squadre" not in st.session_state:
         }
     }
 
-# --- BARRA LATERALE PER AGGIUNGERE NUOVE SQUADRE ---
+# --- BARRA LATERALE PER AGGIUNGERE SQUADRE ---
 st.sidebar.header("⚙️ Gestione Squadre & Rosa")
 nuova_squadra = st.sidebar.text_input("Nome Nuova Squadra:")
 if st.sidebar.button("➕ Aggiungi Squadra"):
@@ -33,27 +33,26 @@ if st.sidebar.button("➕ Aggiungi Squadra"):
 squadra_selezionata = st.sidebar.selectbox("Seleziona Squadra Attiva:", list(st.session_state.squadre.keys()))
 rosa_corrente = st.session_state.squadre[squadra_selezionata]
 
-# Estraiamo i giocatori correnti per metterli nel campo HTML
 por = rosa_corrente["POR"]
 d1, d2, d3 = rosa_corrente["DIF"]
 c1, c2, c3, c4 = rosa_corrente["CEN"]
 a1, a2, a3 = rosa_corrente["ATT"]
 
-# --- CODICE HTML/CSS DELLA DASHBOARD (CON I TUOI GIOCATORI) ---
-html_code = f"""
+# --- CODICE HTML/CSS (Senza f-string per evitare errori di sintassi CSS) ---
+html_code = """
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <title>Lega FC - Dashboard Algoritmo</title>
     <style>
-        body {{ background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; }}
-        .header {{ display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 20px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
-        .container {{ display: flex; gap: 25px; }}
-        .field-container {{ flex: 2; background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 20px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .container { display: flex; gap: 25px; }
+        .field-container { flex: 2; background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
         
         /* Campo da calcio realistico */
-        .football-field {{
+        .football-field {
             position: relative;
             width: 100%;
             height: 680px;
@@ -68,7 +67,7 @@ html_code = f"""
             padding: 20px 0;
             box-sizing: border-box;
         }
-        .football-field::after {{
+        .football-field::after {
             content: '';
             position: absolute;
             top: 50%;
@@ -78,8 +77,8 @@ html_code = f"""
             background: rgba(255, 255, 255, 0.6);
         }
 
-        .row-players {{ display: flex; justify-content: center; gap: 18px; width: 100%; z-index: 2; }}
-        .player-card {{ 
+        .row-players { display: flex; justify-content: center; gap: 18px; width: 100%; z-index: 2; }
+        .player-card { 
             background: rgba(15, 23, 42, 0.92); 
             border: 1px solid #334155; 
             padding: 10px 12px; 
@@ -89,24 +88,24 @@ html_code = f"""
             text-align: center; 
             box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
         }
-        .player-card .p-name {{ display: block; font-weight: bold; color: #38bdf8; font-size: 14px; margin-bottom: 4px; }}
-        .stats-tag {{ font-size: 11px; color: #cbd5e1; display: block; font-weight: 600; }}
-        .bonus-malus {{ font-size: 10px; margin-top: 5px; border-top: 1px solid #334155; padding-top: 4px; }}
-        .bonus {{ color: #4ade80; font-weight: bold; }}
-        .malus {{ color: #f87171; font-weight: bold; }}
+        .player-card .p-name { display: block; font-weight: bold; color: #38bdf8; font-size: 14px; margin-bottom: 4px; }
+        .stats-tag { font-size: 11px; color: #cbd5e1; display: block; font-weight: 600; }
+        .bonus-malus { font-size: 10px; margin-top: 5px; border-top: 1px solid #334155; padding-top: 4px; }
+        .bonus { color: #4ade80; font-weight: bold; }
+        .malus { color: #f87171; font-weight: bold; }
 
-        .sidebar {{ flex: 1; display: flex; flex-direction: column; gap: 25px; }}
-        .card-box {{ background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
-        .bench-list {{ display: flex; flex-direction: column; gap: 12px; }}
-        .bench-item {{ background: #334155; padding: 12px 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }}
-        .bench-info {{ display: flex; flex-direction: column; gap: 2px; }}
-        .bench-stats {{ font-size: 12px; color: #94a3b8; }}
+        .sidebar { flex: 1; display: flex; flex-direction: column; gap: 25px; }
+        .card-box { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .bench-list { display: flex; flex-direction: column; gap: 12px; }
+        .bench-item { background: #334155; padding: 12px 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .bench-info { display: flex; flex-direction: column; gap: 2px; }
+        .bench-stats { font-size: 12px; color: #94a3b8; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1 style="margin: 0; font-size: 24px;">Lega FC - Squadra: <span style="color: #38bdf8;">{squadra_selezionata}</span></h1>
+        <h1 style="margin: 0; font-size: 24px;">Lega FC - Squadra: <span style="color: #38bdf8;">REPLACE_SQUADRA</span></h1>
     </div>
 
     <div class="container">
@@ -117,29 +116,29 @@ html_code = f"""
                 <!-- Portiere -->
                 <div class="row-players">
                     <div class="player-card">
-                        <span class="p-name">{por}</span>
+                        <span class="p-name">REPLACE_POR</span>
                         <span class="stats-tag">Tit: 99%</span>
                         <div class="bonus-malus"><span class="bonus">B: 5%</span> | <span class="malus">M: 10%</span></div>
                     </div>
                 </div>
                 <!-- Difensori -->
                 <div class="row-players">
-                    <div class="player-card"><span class="p-name">{d1}</span><span class="stats-tag">Tit: 95%</span><div class="bonus-malus"><span class="bonus">B: 12%</span> | <span class="malus">M: 20%</span></div></div>
-                    <div class="player-card"><span class="p-name">{d2}</span><span class="stats-tag">Tit: 90%</span><div class="bonus-malus"><span class="bonus">B: 10%</span> | <span class="malus">M: 25%</span></div></div>
-                    <div class="player-card"><span class="p-name">{d3}</span><span class="stats-tag">Tit: 98%</span><div class="bonus-malus"><span class="bonus">B: 30%</span> | <span class="malus">M: 15%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_D1</span><span class="stats-tag">Tit: 95%</span><div class="bonus-malus"><span class="bonus">B: 12%</span> | <span class="malus">M: 20%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_D2</span><span class="stats-tag">Tit: 90%</span><div class="bonus-malus"><span class="bonus">B: 10%</span> | <span class="malus">M: 25%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_D3</span><span class="stats-tag">Tit: 98%</span><div class="bonus-malus"><span class="bonus">B: 30%</span> | <span class="malus">M: 15%</span></div></div>
                 </div>
                 <!-- Centrocampisti -->
                 <div class="row-players">
-                    <div class="player-card"><span class="p-name">{c1}</span><span class="stats-tag">Tit: 92%</span><div class="bonus-malus"><span class="bonus">B: 22%</span> | <span class="malus">M: 25%</span></div></div>
-                    <div class="player-card"><span class="p-name">{c2}</span><span class="stats-tag">Tit: 96%</span><div class="bonus-malus"><span class="bonus">B: 42%</span> | <span class="malus">M: 10%</span></div></div>
-                    <div class="player-card"><span class="p-name">{c3}</span><span class="stats-tag">Tit: 88%</span><div class="bonus-malus"><span class="bonus">B: 35%</span> | <span class="malus">M: 18%</span></div></div>
-                    <div class="player-card"><span class="p-name">{c4}</span><span class="stats-tag">Tit: 85%</span><div class="bonus-malus"><span class="bonus">B: 28%</span> | <span class="malus">M: 22%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_C1</span><span class="stats-tag">Tit: 92%</span><div class="bonus-malus"><span class="bonus">B: 22%</span> | <span class="malus">M: 25%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_C2</span><span class="stats-tag">Tit: 96%</span><div class="bonus-malus"><span class="bonus">B: 42%</span> | <span class="malus">M: 10%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_C3</span><span class="stats-tag">Tit: 88%</span><div class="bonus-malus"><span class="bonus">B: 35%</span> | <span class="malus">M: 18%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_C4</span><span class="stats-tag">Tit: 85%</span><div class="bonus-malus"><span class="bonus">B: 28%</span> | <span class="malus">M: 22%</span></div></div>
                 </div>
                 <!-- Attaccanti -->
                 <div class="row-players">
-                    <div class="player-card"><span class="p-name">{a1}</span><span class="stats-tag">Tit: 100%</span><div class="bonus-malus"><span class="bonus">B: 65%</span> | <span class="malus">M: 15%</span></div></div>
-                    <div class="player-card"><span class="p-name">{a2}</span><span class="stats-tag">Tit: 95%</span><div class="bonus-malus"><span class="bonus">B: 55%</span> | <span class="malus">M: 12%</span></div></div>
-                    <div class="player-card"><span class="p-name">{a3}</span><span class="stats-tag">Tit: 90%</span><div class="bonus-malus"><span class="bonus">B: 50%</span> | <span class="malus">M: 10%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_A1</span><span class="stats-tag">Tit: 100%</span><div class="bonus-malus"><span class="bonus">B: 65%</span> | <span class="malus">M: 15%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_A2</span><span class="stats-tag">Tit: 95%</span><div class="bonus-malus"><span class="bonus">B: 55%</span> | <span class="malus">M: 12%</span></div></div>
+                    <div class="player-card"><span class="p-name">REPLACE_A3</span><span class="stats-tag">Tit: 90%</span><div class="bonus-malus"><span class="bonus">B: 50%</span> | <span class="malus">M: 10%</span></div></div>
                 </div>
             </div>
         </div>
@@ -179,5 +178,19 @@ html_code = f"""
 </body>
 </html>
 """
+
+# Sostituiamo i segnaposto in modo pulito senza conflitti di parentesi graffe
+html_code = html_code.replace("REPLACE_SQUADRA", squadra_selezionata)
+html_code = html_code.replace("REPLACE_POR", por)
+html_code = html_code.replace("REPLACE_D1", d1)
+html_code = html_code.replace("REPLACE_D2", d2)
+html_code = html_code.replace("REPLACE_D3", d3)
+html_code = html_code.replace("REPLACE_C1", c1)
+html_code = html_code.replace("REPLACE_C2", c2)
+html_code = html_code.replace("REPLACE_C3", c3)
+html_code = html_code.replace("REPLACE_C4", c4)
+html_code = html_code.replace("REPLACE_A1", a1)
+html_code = html_code.replace("REPLACE_A2", a2)
+html_code = html_code.replace("REPLACE_A3", a3)
 
 components.html(html_code, height=820, scrolling=True)
