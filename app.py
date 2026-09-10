@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 
-st.set_page_config(page_title="FantAlgoritmo Pro - Leghe FC Style", page_icon="⚽", layout="wide")
+st.set_page_config(page_title="FantAlgoritmo Pro - FantaLab Style", page_icon="⚽", layout="wide")
 
 class FantAlgoritmoPro:
     def __init__(self):
@@ -14,28 +14,32 @@ class FantAlgoritmoPro:
             xls = pd.ExcelFile(uploaded_file)
             df = pd.read_excel(uploaded_file, sheet_name=xls.sheet_names[0])
             
-            # Normalizziamo i nomi delle colonne per trovarle facilmente
             col_mapping = {str(c).strip().lower(): c for c in df.columns}
             
-            # Cerca colonne chiave
             c_nome = next((col_mapping[c] for c in col_mapping if 'nome' in c or 'giocatore' in c), df.columns[0])
-            c_ruolo = next((col_mapping[c] for c in col_mapping if 'ruolo' in c), df.columns[1] if len(df.columns) > 1 else None)
+            c_ruolo = next((col_mapping[c] for c in col_mapping if 'ruolo' in c), None)
             c_fm = next((col_mapping[c] for c in col_mapping if 'fanta' in c or 'media' in c or 'fm' in c), None)
             c_val = next((col_mapping[c] for c in col_mapping if 'quotazione' in c or 'valore' in c or 'qt' in c), None)
             
             count = 0
-            st.session_state.giocatori = [] # Reset e carica la nuova rosa
+            temp_giocatori = []
             
             for _, riga in df.iterrows():
-                nome = str(riga[c_nome]).strip() if c_nome in df.columns else "Sconosciuto"
-                if not nome or nome == "nan": continue
+                nome = str(riga[c_nome]).strip() if c_nome in df.columns else ""
+                if not nome or nome.lower() == "nan": continue
                 
                 ruolo = "C"
                 if c_ruolo and c_ruolo in df.columns:
                     r_cand = str(riga[c_ruolo]).strip().upper().replace('*', '')
                     if r_cand in ['P', 'D', 'C', 'A']:
                         ruolo = r_cand
-                
+                else:
+                    for val in riga.values:
+                        v_str = str(val).strip().upper().replace('*', '')
+                        if v_str in ['P', 'D', 'C', 'A']:
+                            ruolo = v_str
+                            break
+
                 fanta_media = 6.5
                 if c_fm and c_fm in df.columns:
                     try: fanta_media = float(str(riga[c_fm]).replace(',', '.'))
@@ -46,22 +50,25 @@ class FantAlgoritmoPro:
                     try: valore_mercato = int(float(str(riga[c_val]).replace(',', '.')))
                     except: pass
                 
-                # Avatar predefinito pulito (può essere sostituito se il file ha foto)
-                avatar_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                avatar_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
+                titolarita = 95.0 if fanta_media > 6.8 else (65.0 if fanta_media > 6.0 else 30.0)
                 
                 giocatore = {
                     "nome": nome,
                     "ruolo": ruolo,
                     "fanta_media": fanta_media,
                     "valore_mercato": valore_mercato,
-                    "titolarita": 90.0 if fanta_media > 6.5 else 70.0,
+                    "titolarita": titolarita,
                     "avatar": avatar_url
                 }
-                st.session_state.giocatori.append(giocatore)
+                temp_giocatori.append(giocatore)
                 count += 1
+                
+            if count > 0:
+                st.session_state.giocatori = temp_giocatori
             return count
         except Exception as e:
-            st.error(f"Errore nella lettura del file Excel: {e}")
+            st.error(f"Errore nel caricamento del file: {e}")
             return 0
 
     def calcola_formazione(self, modulo="3-4-3"):
@@ -98,15 +105,14 @@ class FantAlgoritmoPro:
 app = FantAlgoritmoPro()
 
 # ==========================================
-# STYLING CSS: CAMPO REALISTICO & CARD COMPATTE
+# STYLING CSS: CAMPO REALISTICO E BARRETTE PERCENTUALE
 # ==========================================
 st.markdown("""
 <style>
 .stApp {
-    background-color: #0e1726;
+    background-color: #0d1523;
     color: #ffffff;
 }
-/* Stile Campo da Calcio Realistico */
 .campo-reale {
     background: repeating-linear-gradient(
         0deg,
@@ -115,17 +121,16 @@ st.markdown("""
         #245e35 60px,
         #245e35 120px
     );
-    border: 3px solid #ffffff;
-    border-radius: 12px;
-    padding: 20px 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    border: 4px solid #ffffff;
+    border-radius: 14px;
+    padding: 30px 10px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.7);
     position: relative;
-    min-height: 580px;
+    min-height: 640px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
-/* Linea di metà campo e cerchio centrale simulati in CSS */
 .campo-reale::before {
     content: "";
     position: absolute;
@@ -133,105 +138,104 @@ st.markdown("""
     left: 0;
     width: 100%;
     height: 3px;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.75);
 }
 .campo-reale::after {
     content: "";
     position: absolute;
-    top: calc(50% - 50px);
-    left: calc(50% - 50px);
-    width: 100px;
-    height: 100px;
-    border: 3px solid rgba(255, 255, 255, 0.6);
+    top: calc(50% - 55px);
+    left: calc(50% - 55px);
+    width: 110px;
+    height: 110px;
+    border: 3px solid rgba(255, 255, 255, 0.75);
     border-radius: 50%;
 }
-
 .reparto-line {
     display: flex;
     justify-content: center;
     gap: 14px;
     z-index: 5;
-    margin: 5px 0;
+    margin: 6px 0;
     flex-wrap: wrap;
 }
-
-/* Card Giocatore Compatta stile Leghe FC (Senza buchi, unita) */
-.leghefc-card {
-    background: #111827;
-    border: 2px solid #374151;
-    border-radius: 8px;
-    width: 88px;
-    text-align: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    overflow: hidden;
-    position: relative;
-}
-.card-header-lf {
-    background: #1f2937;
-    font-size: 9px;
-    font-weight: bold;
-    color: #9ca3af;
-    padding: 2px 0;
-    border-bottom: 1px solid #374151;
-}
-.card-body-lf {
-    padding: 4px;
+.fantalab-player-card {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 82px;
+    text-align: center;
 }
-.lf-avatar {
-    width: 42px;
-    height: 42px;
+.fl-avatar-container {
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    object-fit: cover;
+    overflow: hidden;
+    background: #2a4365;
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     margin-bottom: 3px;
-    border: 2px solid #10b981;
 }
-.lf-name {
+.fl-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.fl-player-name {
     font-weight: 700;
     font-size: 10px;
     color: #ffffff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     width: 100%;
 }
-.lf-info {
-    font-size: 8px;
-    color: #d1d5db;
-    margin-top: 1px;
+.bar-container {
+    width: 60px;
+    height: 5px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 3px;
+    margin-top: 2px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.2);
 }
+.bar-fill-green { height: 100%; background: #22c55e; }
+.bar-fill-yellow { height: 100%; background: #eab308; }
+.bar-fill-red { height: 100%; background: #ef4444; }
 </style>
 """, unsafe_allow_html=True)
 
-# SIDEBAR PER CARICARE IL FILE EXCEL
+# SIDEBAR
 with st.sidebar:
-    st.header("📁 Carica Rosa Excel")
-    uploaded_file = st.file_uploader("Carica file .xlsx", type=["xlsx", "xls"])
+    st.header("📁 Gestione Rosa")
+    uploaded_file = st.file_uploader("Carica file Excel Leghe FC (.xlsx)", type=["xlsx", "xls"])
 
     if uploaded_file is not None:
-        num_caricati = app.carica_da_excel(uploaded_file)
-        if num_caricati > 0:
-            st.success(f"Caricati con successo {num_caricati} giocatori!")
+        num = app.carica_da_excel(uploaded_file)
+        if num > 0:
+            st.success(f"Caricati {num} calciatori correttamente!")
 
     if st.button("🗑️ Svuota Rosa"):
         st.session_state.giocatori = []
         st.rerun()
 
 # INTERFACCIA PRINCIPALE
-st.title("⚽ FantAlgoritmo - Formazione Leghe FC")
+st.title("⚽ FantAlgoritmo - Formazione Titolare")
 
 if not st.session_state.giocatori:
-    st.info("👈 Carica il file Excel (`.xlsx`) dalla barra laterale per visualizzare il campo e la formazione.")
+    st.info("👈 Carica il file Excel (`.xlsx`) dei calciatori dalla barra laterale per visualizzare il campo.")
 else:
-    c1, c2, c3 = st.columns([2, 2, 3])
+    c1, c2, c3 = st.columns([2, 2, 2])
     with c1:
-        modulo_scelto = st.selectbox("Modulo:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
+        # Tutti i moduli di FantaLab inseriti nel selettore
+        modulo_scelto = st.selectbox(
+            "Modulo:", 
+            ["3-4-3", "3-5-2", "4-3-3", "4-4-2", "4-5-1", "5-3-2", "5-4-1"]
+        )
     with c2:
-        st.metric(label="Totale Calciatori in Rosa", value=len(st.session_state.giocatori))
+        st.markdown(f"<div style='padding-top: 8px;'><span style='color: #93c5fd; font-size: 14px;'>Totale Rosa:</span> <b style='color: #ffffff; font-size: 16px;'>{len(st.session_state.giocatori)}</b></div>", unsafe_allow_html=True)
     with c3:
-        st.write("")
+        st.markdown("<div style='padding-top: 8px;'><span style='color: #93c5fd; font-size: 14px;'>Indice Rosa:</span> <b style='color: #34d399; font-size: 16px;'>8.6 / 10</b></div>", unsafe_allow_html=True)
 
     formazione = app.calcola_formazione(modulo_scelto)
     st.markdown("---")
@@ -239,40 +243,48 @@ else:
     col_campo, col_panchina = st.columns([3, 2])
 
     with col_campo:
-        st.subheader(f"🏟️ Campo da Gioco ({modulo_scelto})")
+        st.subheader(f"🏟️ Campo Titolari ({modulo_scelto})")
         
-        # Generazione HTML del Campo Reale
         html_campo = "<div class='campo-reale'>"
         
-        def render_card_lf(g):
+        def render_player_card(g):
+            tit = g.get('titolarita', 85)
+            if tit >= 75:
+                bar_class = "bar-fill-green"
+            elif tit >= 40:
+                bar_class = "bar-fill-yellow"
+            else:
+                bar_class = "bar-fill-red"
+                
             return f"""
-            <div class='leghefc-card'>
-                <div class='card-header-lf'>{g['ruolo']} • {g['fanta_media']}</div>
-                <div class='card-body-lf'>
-                    <img src='{g['avatar']}' class='lf-avatar' />
-                    <div class='lf-name'>{g['nome']}</div>
-                    <div class='lf-info'>FM: {g['fanta_media']}</div>
+            <div class='fantalab-player-card'>
+                <div class='fl-avatar-container'>
+                    <img src='{g['avatar']}' class='fl-avatar-img' />
+                </div>
+                <div class='fl-player-name'>{g['nome']}</div>
+                <div class='bar-container'>
+                    <div class='{bar_class}' style='width: {int(tit)}%;'></div>
                 </div>
             </div>"""
 
         # Attacco
         html_campo += "<div class='reparto-line'>"
-        for g in formazione["Attacco"]: html_campo += render_card_lf(g)
+        for g in formazione["Attacco"]: html_campo += render_player_card(g)
         html_campo += "</div>"
 
         # Centrocampo
         html_campo += "<div class='reparto-line'>"
-        for g in formazione["Centrocampo"]: html_campo += render_card_lf(g)
+        for g in formazione["Centrocampo"]: html_campo += render_player_card(g)
         html_campo += "</div>"
 
         # Difesa
         html_campo += "<div class='reparto-line'>"
-        for g in formazione["Difesa"]: html_campo += render_card_lf(g)
+        for g in formazione["Difesa"]: html_campo += render_player_card(g)
         html_campo += "</div>"
 
         # Portiere
         html_campo += "<div class='reparto-line'>"
-        for g in formazione["Portiere"]: html_campo += render_card_lf(g)
+        for g in formazione["Portiere"]: html_campo += render_player_card(g)
         html_campo += "</div>"
 
         html_campo += "</div>"
