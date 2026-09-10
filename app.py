@@ -3,9 +3,9 @@ import csv
 import io
 
 # Configurazione pagina a tutto schermo
-st.set_page_config(page_title="FantAlgoritmo Pro - Campo", page_icon="⚽", layout="wide")
+st.set_page_config(page_title="FantAlgoritmo Pro - Campo Reale", page_icon="⚽", layout="wide")
 
-class FantAlgoritmoCampo:
+class FantAlgoritmoCampoReale:
     def __init__(self):
         if 'giocatori' not in st.session_state:
             st.session_state.giocatori = []
@@ -18,7 +18,6 @@ class FantAlgoritmoCampo:
             f_media = 6.5
             v_mercato = 10
 
-        # Calcolo score di schierabilità
         indice_partita = 2
         titolarita = 0.90 if f_media > 6.3 else 0.70
         score_schierabilita = ((f_media) * titolarita) - (indice_partita * 0.2)
@@ -78,46 +77,71 @@ class FantAlgoritmoCampo:
             consigli.append("✅ Rosa in salute e ben bilanciata!")
         return consigli
 
-app = FantAlgoritmoCampo()
+app = FantAlgoritmoCampoReale()
 
 # ==========================================
-# STYLING CAMPO DA CALCIO (CSS)
+# STYLING CAMPO DA CALCIO MODERNO
 # ==========================================
 st.markdown("""
 <style>
-.campo-container {
-    background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
-    border: 4px solid #ffffff;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-    color: white;
-    text-align: center;
-    margin-bottom: 20px;
+.soccer-field {
+    background: #2e7d32;
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px),
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.2) 100%);
+    background-size: 100% 100%, 100% 100%, 100% 100%;
+    border: 3px solid #ffffff;
+    border-radius: 16px;
+    padding: 25px 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 520px;
 }
-.reparto-linea {
+/* Linea di metà campo stilizzata */
+.soccer-field::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    z-index: 1;
+}
+.linea-reparto {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin: 15px 0;
+    gap: 15px;
+    z-index: 2;
+    margin: 8px 0;
     flex-wrap: wrap;
 }
-.giocatore-card {
-    background: rgba(0, 0, 0, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 8px;
+.player-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
     padding: 8px 12px;
-    min-width: 120px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    text-align: center;
+    min-width: 110px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
-.giocatore-nome {
-    font-weight: bold;
-    font-size: 14px;
-    color: #ffeb3b;
+.player-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: #facc15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
 }
-.giocatore-info {
-    font-size: 11px;
-    color: #e0e0e0;
+.player-details {
+    font-size: 10px;
+    color: #cbd5e1;
+    margin-top: 2px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -194,9 +218,8 @@ with st.sidebar:
 st.title("⚽ FantAlgoritmo - Campo Live")
 
 if not st.session_state.giocatori:
-    st.info("👈 Carica il file CSV della tua squadra dal menu a sinistra per vedere la grafica sul campo da calcio.")
+    st.info("👈 Carica il file CSV della tua squadra dal menu a sinistra per vedere la formazione sul campo grafico.")
 else:
-    # Selezione Modulo (Aggiornamento Automatico Immediato)
     col_m1, col_m2 = st.columns([2, 4])
     with col_m1:
         modulo_scelto = st.selectbox("🎯 Modulo Tattico:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
@@ -209,37 +232,33 @@ else:
     col_campo, col_lato = st.columns([3, 2])
 
     with col_campo:
-        st.subheader(f"🏟️ Campo da Gioco ({modulo_scelto})")
+        st.subheader(f"🏟️ Formazione Titolare ({modulo_scelto})")
         
-        # RENDER DEL CAMPO DA CALCIO GRAFICO HTML
-        html_campo = "<div class='campo-container'>"
+        # --- CREAZIONE DEL CAMPO DA CALCIO GRAFICO (SENZA SCRITTE SUPERFLUE DEI REPARTI) ---
+        html_campo = "<div class='soccer-field'>"
         
-        # 1. Attacco (In alto sul campo)
-        html_campo += "<div style='font-size:12px; color:#a5d6a7; font-weight:bold;'>ATTACCO</div><div class='reparto-linea'>"
+        # 1. Attacco (In alto)
+        html_campo += "<div class='linea-reparto'>"
         for g in formazione["Attacco"]:
-            html_campo += f"<div class='giocatore-card'><div class='giocatore-nome'>{g['nome']}</div><div class='giocatore-info'>FM: {g['fanta_media']}</div></div>"
-        if not formazione["Attacco"]: html_campo += "<div>Nessun attaccante</div>"
+            html_campo += f"<div class='player-card'><div class='player-name'>{g['nome']}</div><div class='player-details'>A • FM {g['fanta_media']}</div></div>"
         html_campo += "</div>"
 
         # 2. Centrocampo
-        html_campo += "<div style='font-size:12px; color:#a5d6a7; font-weight:bold; margin-top:10px;'>CENTROCAMPO</div><div class='reparto-linea'>"
+        html_campo += "<div class='linea-reparto'>"
         for g in formazione["Centrocampo"]:
-            html_campo += f"<div class='giocatore-card'><div class='giocatore-nome'>{g['nome']}</div><div class='giocatore-info'>FM: {g['fanta_media']}</div></div>"
-        if not formazione["Centrocampo"]: html_campo += "<div>Nessun centrocampista</div>"
+            html_campo += f"<div class='player-card'><div class='player-name'>{g['nome']}</div><div class='player-details'>C • FM {g['fanta_media']}</div></div>"
         html_campo += "</div>"
 
         # 3. Difesa
-        html_campo += "<div style='font-size:12px; color:#a5d6a7; font-weight:bold; margin-top:10px;'>DIFESA</div><div class='reparto-linea'>"
+        html_campo += "<div class='linea-reparto'>"
         for g in formazione["Difesa"]:
-            html_campo += f"<div class='giocatore-card'><div class='giocatore-nome'>{g['nome']}</div><div class='giocatore-info'>FM: {g['fanta_media']}</div></div>"
-        if not formazione["Difesa"]: html_campo += "<div>Nessun difensore</div>"
+            html_campo += f"<div class='player-card'><div class='player-name'>{g['nome']}</div><div class='player-details'>D • FM {g['fanta_media']}</div></div>"
         html_campo += "</div>"
 
-        # 4. Portiere (In basso sul campo)
-        html_campo += "<div style='font-size:12px; color:#a5d6a7; font-weight:bold; margin-top:10px;'>PORTIERE</div><div class='reparto-linea'>"
+        # 4. Portiere (In basso)
+        html_campo += "<div class='linea-reparto'>"
         for g in formazione["Portiere"]:
-            html_campo += f"<div class='giocatore-card'><div class='giocatore-nome'>{g['nome']}</div><div class='giocatore-info'>FM: {g['fanta_media']}</div></div>"
-        if not formazione["Portiere"]: html_campo += "<div>Nessun portiere</div>"
+            html_campo += f"<div class='player-card'><div class='player-name'>{g['nome']}</div><div class='player-details'>P • FM {g['fanta_media']}</div></div>"
         html_campo += "</div>"
 
         html_campo += "</div>"
