@@ -18,17 +18,14 @@ class FantAlgoritmoPro:
             f_media = 6.5
             v_mercato = 10
 
-        # Euristica avanzata per la titolarità reale (evita anomalie tipo Provedel panchinaro)
         nome_lower = str(nome).lower()
         
-        # Correzioni mirate basate sui dati reali del campionato (es. Vicario titolare fisso, Provedel alternato/panchina se specificato)
         fattore_titolarita = presenze_stimate
         if "provedel" in nome_lower:
-            fattore_titolarita = 0.4  # Meno affidabile come titolarità fissa rispetto ad altri
+            fattore_titolarita = 0.4  # Gestione portiere panchinaro
         elif "vicario" in nome_lower:
-            fattore_titolarita = 0.99 # Titolare inamovibile
+            fattore_titolarita = 0.99 # Gestione portiere titolare fisso
 
-        # Score combinato: Fanta Media ponderata con la titolarità effettiva
         score_affidabilita = (f_media * 0.7) + (fattore_titolarita * 3.0)
         
         giocatore = {
@@ -48,11 +45,15 @@ class FantAlgoritmoPro:
     def calcola_formazione(self, modulo="3-4-3"):
         lista = st.session_state.giocatori
         
-        # Ordinamento basato sullo score di titolarità/affidabilità (non solo fanta-media secca)
-        portieri = sorted([g for g in lista if g["ruolo"] == 'P'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
-        difensori = sorted([g for g in lista if g["ruolo"] == 'D'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
-        centrocampisti = sorted([g for g in lista if g["ruolo"] == 'C'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
-        attaccanti = sorted([g for g in lista if g["ruolo"] == 'A'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
+        # Sicurezza sui dizionari esistenti senza chiave titolarita
+        for g in lista:
+            if "titolarita" not in g:
+                g["titolarita"] = 0.9
+
+        portieri = sorted([g for g in lista if g["ruolo"] == 'P'], key=lambda x: (x.get("titolarita", 0.9), x["fanta_media"]), reverse=True)
+        difensori = sorted([g for g in lista if g["ruolo"] == 'D'], key=lambda x: (x.get("titolarita", 0.9), x["fanta_media"]), reverse=True)
+        centrocampisti = sorted([g for g in lista if g["ruolo"] == 'C'], key=lambda x: (x.get("titolarita", 0.9), x["fanta_media"]), reverse=True)
+        attaccanti = sorted([g for g in lista if g["ruolo"] == 'A'], key=lambda x: (x.get("titolarita", 0.9), x["fanta_media"]), reverse=True)
 
         try:
             mod_parti = [int(x) for x in modulo.split("-")]
@@ -116,7 +117,6 @@ st.markdown("""
         linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
     background-size: 100% 100%;
 }
-/* Linea di metà campo */
 .campo-pro::after {
     content: "";
     position: absolute;
@@ -260,10 +260,9 @@ else:
     with col_campo:
         st.subheader(f"🏟️ Formazione Titolare ({modulo_scelto})")
         
-        # --- CAMPO DA CALCIO MODERNO ---
         html_campo = "<div class='campo-pro'>"
         
-        # 1. Attacco (In alto)
+        # 1. Attacco
         html_campo += "<div class='reparto-row'>"
         for g in formazione["Attacco"]:
             html_campo += f"""
@@ -296,7 +295,7 @@ else:
             </div>"""
         html_campo += "</div>"
 
-        # 4. Portiere (In basso - gestito correttamente con i titolari effettivi)
+        # 4. Portiere
         html_campo += "<div class='reparto-row'>"
         for g in formazione["Portiere"]:
             html_campo += f"""
