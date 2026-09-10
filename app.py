@@ -1,177 +1,190 @@
-import streamlit as st
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Lega FC - Gestione Multi-Squadra & Algoritmo</title>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; }
+        .team-selector select { background: #0f172a; color: #38bdf8; border: 1px solid #334155; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .container { display: flex; gap: 20px; }
+        .field-container { flex: 2; background: #1e293b; padding: 20px; border-radius: 12px; text-align: center; }
+        
+        /* Campo da calcio realistico */
+        .football-field {
+            position: relative;
+            width: 100%;
+            height: 580px;
+            background: linear-gradient(to bottom, #2e7d32, #1b5e20);
+            border: 3px solid #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 15px 0;
+            box-sizing: border-box;
+        }
+        /* Linea di metà campo */
+        .football-field::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.6);
+        }
 
-# Configurazione della pagina
-st.set_page_config(page_title="FantAlgoritmo - Formazione Titolare", layout="wide")
+        .row-players { display: flex; justify-content: center; gap: 12px; width: 100%; z-index: 2; }
+        .player-card { background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; padding: 6px 8px; border-radius: 6px; font-size: 11px; width: 95px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .player-card .p-name { display: block; font-weight: bold; color: #38bdf8; font-size: 12px; margin-bottom: 2px; }
+        .stats-tag { font-size: 9px; color: #cbd5e1; display: block; }
+        .bonus-malus { font-size: 9px; margin-top: 3px; border-top: 1px solid #334155; padding-top: 2px; }
+        .bonus { color: #4ade80; }
+        .malus { color: #f87171; }
 
-# Intestazione superiore
-st.markdown("""
-    <div style="display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa; padding: 12px 20px; border-radius: 8px; border-bottom: 3px solid #2e7d32;">
-        <h2 style="margin: 0; color: #1e293b; font-size: 20px;">⚽ FantAlgoritmo - Formazione Titolare</h2>
-        <div>
-            <span style="background-color: #e2e8f0; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; margin-right: 10px; color: #334155;">Totale Rosa: 25</span>
-            <span style="background-color: #dcfce7; color: #166534; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">Indice Rosa: 8.6 / 10</span>
+        .sidebar { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        .card-box { background: #1e293b; padding: 15px; border-radius: 12px; }
+        .bench-list { display: flex; flex-direction: column; gap: 8px; }
+        .bench-item { background: #334155; padding: 8px 12px; border-radius: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .bench-info { display: flex; flex-direction: column; }
+        .bench-stats { font-size: 10px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Lega FC - Dashboard Algoritmo</h1>
+        <div class="team-selector">
+            <label for="teamSelect">Squadra: </label>
+            <select id="teamSelect">
+                <option value="1">FC Dinamo (La tua Rosa)</option>
+                <option value="2">Real Maraviglia (Rosa 2)</option>
+                <option value="3">Atletico Borgo (Rosa 3)</option>
+            </select>
         </div>
     </div>
-""", unsafe_allow_html=True)
 
-st.write("")
-
-# Filtri superiori: Rosa e Modulo
-col_f1, col_f2 = st.columns([2, 1])
-with col_f1:
-    st.selectbox("Seleziona la rosa da visualizzare:", ["la beneamata ma non troppo"])
-with col_f2:
-    modulo_scelto = st.selectbox("Cambia Modulo:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
-
-# Layout principale a due colonne: Campo (Sinistra) e Panchina (Destra)
-col_campo, col_panchina = st.columns([2, 1])
-
-with col_campo:
-    # Intestazione del campo
-    st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); padding: 12px 15px; border-radius: 12px 12px 0 0; border: 2px solid #155724; border-bottom: none; display: flex; align-items: center; color: white;">
-            <span style="font-size: 18px; margin-right: 8px;">🏟️</span>
-            <h3 style="margin: 0; font-size: 16px; color: white;">Campo Titolari ({modulo_scelto})</h3>
+    <div class="container">
+        <!-- CAMPO TITOLARI (STADIO) -->
+        <div class="field-container">
+            <h3>Formazione Consigliata (Titolari)</h3>
+            <div class="football-field">
+                <!-- Portiere -->
+                <div class="row-players">
+                    <div class="player-card">
+                        <span class="p-name">Maignan</span>
+                        <span class="stats-tag">Tit: 99%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 5%</span> | <span class="malus">M: 10%</span></div>
+                    </div>
+                </div>
+                <!-- Difensori (3) -->
+                <div class="row-players">
+                    <div class="player-card">
+                        <span class="p-name">Bastoni</span>
+                        <span class="stats-tag">Tit: 95%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 12%</span> | <span class="malus">M: 20%</span></div>
+                    </div>
+                    <div class="player-card">
+                        <span class="p-name">Bremer</span>
+                        <span class="stats-tag">Tit: 90%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 10%</span> | <span class="malus">M: 25%</span></div>
+                    </div>
+                    <div class="player-card">
+                        <span class="p-name">Dimarco</span>
+                        <span class="stats-tag">Tit: 98%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 30%</span> | <span class="malus">M: 15%</span></div>
+                    </div>
+                </div>
+                <!-- Centrocampisti (4) -->
+                <div class="row-players">
+                    <div class="player-card">
+                        <span class="p-name">Barella</span>
+                        <span class="stats-tag">Tit: 92%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 22%</span> | <span class="malus">M: 25%</span></div>
+                    </div>
+                    <div class="player-card">
+                        <span class="p-name">Pulisic</span>
+                        <span class="stats-tag">Tit: 96%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 42%</span> | <span class="malus">M: 10%</span></div>
+                    </div>
+                    <div class="player-card">
+                        <span class="p-name">Koopmeiners</span>
+                        <span class="stats-tag">Tit: 88%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 35%</span> | <span class="malus">M: 18%</span></div>
+                    </div>
+                    <div class="player-card">
+                        <span class="p-name">Zaccagni</span>
+                        <span class="stats-tag">Tit: 85%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 28%</span> | <span class="malus">M: 22%</span></div>
+                    </div>
+                </div>
+                <!-- Attaccanti (3) -->
+                <div class="row-players">
+                    <div class="player-card">
+                        <span class="p-name">Lautaro</span>
+                        <span class="stats-tag">Tit: 100%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 65%</span> | <span class="malus">M: 15%</span></div>
+                    </div>
+                    <div class="player-card">
+                        <span class="p-name">Thuram</span>
+                        <span class="stats-tag">Tit: 95%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 55%</span> | <span class="malus">M: 12%</span></div>
+                    </div>
+                    <div class="player-card">
+                        <span class="p-name">Retegui</span>
+                        <span class="stats-tag">Tit: 90%</span>
+                        <div class="bonus-malus"><span class="bonus">B: 50%</span> | <span class="malus">M: 10%</span></div>
+                    </div>
+                </div>
+            </div>
         </div>
-    """, unsafe_allow_html=True)
 
-    # Contenitore verde del campo
-    st.markdown("""
-        <div style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); padding: 20px; border-radius: 0 0 12px 12px; border: 2px solid #155724; border-top: none; margin-bottom: 20px;">
-    """, unsafe_allow_html=True)
-    
-    # ATTACCO
-    st.markdown("<p style='text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin: 0 0 8px 0; letter-spacing: 1px;'>ATTACCO</p>", unsafe_allow_html=True)
-    att1, att2, att3 = st.columns(3)
-    
-    with att1:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 22px;">👤</div>
-                <div style="color: white; font-size: 11px; font-weight: bold;">Tuo Giocatore 1</div>
-                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 4px 0;"></div>
-                <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare</div>
+        <!-- PANCHINA E RISERVE (SEDIA) -->
+        <div class="sidebar">
+            <div class="card-box">
+                <h3>Panchina (Riserve 🪑)</h3>
+                <div class="bench-list">
+                    <div class="bench-item">
+                        <div class="bench-info">
+                            <strong>Svilar (POR)</strong>
+                            <span class="bench-stats">Tit: 98% | <span class="bonus">B: 4%</span></span>
+                        </div>
+                        <span style="color: #38bdf8; font-size: 11px;">Alg: 92%</span>
+                    </div>
+                    <div class="bench-item">
+                        <div class="bench-info">
+                            <strong>Buongiorno (DIF)</strong>
+                            <span class="bench-stats">Tit: 90% | <span class="bonus">B: 8%</span></span>
+                        </div>
+                        <span style="color: #38bdf8; font-size: 11px;">Alg: 88%</span>
+                    </div>
+                    <div class="bench-item">
+                        <div class="bench-info">
+                            <strong>Calhanoglu (CEN)</strong>
+                            <span class="bench-stats">Tit: 95% | <span class="bonus">B: 48%</span></span>
+                        </div>
+                        <span style="color: #38bdf8; font-size: 11px;">Alg: 95%</span>
+                    </div>
+                    <div class="bench-item">
+                        <div class="bench-info">
+                            <strong>Lookman (ATT)</strong>
+                            <span class="bench-stats">Tit: 85% | <span class="bonus">B: 58%</span></span>
+                        </div>
+                        <span style="color: #38bdf8; font-size: 11px;">Alg: 90%</span>
+                    </div>
+                </div>
             </div>
-        """, unsafe_allow_html=True)
-    with att2:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 22px;">👤</div>
-                <div style="color: white; font-size: 11px; font-weight: bold;">Tuo Giocatore 2</div>
-                <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 4px 0;"></div>
-                <div style="color: #fb923c; font-size: 10px; font-weight: bold;">🟠 Ballottaggio</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with att3:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 22px;">👤</div>
-                <div style="color: white; font-size: 11px; font-weight: bold;">Tuo Giocatore 3</div>
-                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 4px 0;"></div>
-                <div style="color: #4ade80; font-size: 10px; font-weight: bold;">🟢 Titolare</div>
-            </div>
-        """, unsafe_allow_html=True)
 
-    # CENTROCAMPO
-    st.markdown("<p style='text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin: 20px 0 8px 0; letter-spacing: 1px;'>CENTROCAMPO</p>", unsafe_allow_html=True)
-    cc1, cc2, cc3, cc4 = st.columns(4)
-    
-    with cc1:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 18px;">👤</div>
-                <div style="color: white; font-size: 10px; font-weight: bold;">CC 1</div>
-                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
+            <div class="card-box">
+                <h3>Indice Rosa & Algoritmo</h3>
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">Totale Indice Rosa: <strong>86.4 / 100</strong></p>
+                <p style="font-size: 12px; color: #94a3b8; margin: 0;">Incrocio dati probabili formazioni (Sky, Gazzetta, Corsport, Fantacalcio): <strong>Affidabilità Massima</strong></p>
             </div>
-        """, unsafe_allow_html=True)
-    with cc2:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 18px;">👤</div>
-                <div style="color: white; font-size: 10px; font-weight: bold;">CC 2</div>
-                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with cc3:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 18px;">👤</div>
-                <div style="color: white; font-size: 10px; font-weight: bold;">CC 3</div>
-                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with cc4:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 18px;">👤</div>
-                <div style="color: white; font-size: 10px; font-weight: bold;">CC 4</div>
-                <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 3px 0;"></div>
-                <div style="color: #fb923c; font-size: 9px; font-weight: bold;">🟠 Ballottaggio</div>
-            </div>
-        """, unsafe_allow_html=True)
+        </div>
+    </div>
 
-    # DIFESA
-    st.markdown("<p style='text-align: center; color: #a3e635; font-weight: bold; font-size: 11px; margin: 20px 0 8px 0; letter-spacing: 1px;'>DIFESA</p>", unsafe_allow_html=True)
-    d1, d2, d3 = st.columns(3)
-    
-    with d1:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 18px;">👤</div>
-                <div style="color: white; font-size: 10px; font-weight: bold;">DC 1</div>
-                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with d2:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 18px;">👤</div>
-                <div style="color: white; font-size: 10px; font-weight: bold;">DC 2</div>
-                <div style="height: 4px; background-color: #22c55e; border-radius: 2px; margin: 3px 0;"></div>
-                <div style="color: #4ade80; font-size: 9px; font-weight: bold;">🟢 Titolare</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with d3:
-        st.markdown("""
-            <div style="background: rgba(0,0,0,0.5); padding: 6px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 18px;">👤</div>
-                <div style="color: white; font-size: 10px; font-weight: bold;">DC 3</div>
-                <div style="height: 4px; background-color: #f97316; border-radius: 2px; margin: 3px 0;"></div>
-                <div style="color: #fb923c; font-size: 9px; font-weight: bold;">🟠 Ballottaggio</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with col_panchina:
-    # Sezione Panchina con icona della sedia in legno (🪑)
-    st.markdown("""
-        <div style="background-color: #ffffff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <div style="display: flex; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">
-                <span style="font-size: 18px; margin-right: 8px;">🪑</span>
-                <h3 style="margin: 0; font-size: 15px; color: #1e293b;">Panchina & Riserve</h3>
-            </div>
-    """, unsafe_allow_html=True)
-    
-    panchina_giocatori = [
-        ("Riserva 1 (P)", "6.17", "+10%"),
-        ("Riserva 2 (D)", "6.33", "+10%"),
-        ("Riserva 3 (D)", "6.17", "+10%"),
-        ("Riserva 4 (D)", "6.00", "+5%"),
-        ("Riserva 5 (C)", "6.25", "+15%"),
-        ("Riserva 6 (C)", "6.00", "+5%")
-    ]
-    
-    for nome, fm, bonus in panchina_giocatori:
-        st.markdown(f"""
-            <div style="font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f8fafc; display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #334155; font-weight: 500;">🔹 {nome}</span>
-                <span style="color: #64748b; font-size: 11px;">FM: <b>{fm}</b> | <span style="color: #16a34a; font-weight: bold;">Bonus: {bonus}</span></span>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    st.markdown("</div>", unsafe_allow_html=True)
+</body>
+</html>
