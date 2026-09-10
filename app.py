@@ -102,20 +102,20 @@ st.markdown("""
     color: #ffffff;
 }
 .campo-pro {
-    background: linear-gradient(135deg, #1e4d2b 0%, #11331c 100%);
-    border: 3px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(135deg, #166534 0%, #14532d 50%, #052e16 100%);
+    border: 3px solid rgba(255, 255, 255, 0.3);
     border-radius: 24px;
-    padding: 30px 10px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+    padding: 35px 15px;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.7);
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 650px;
+    min-height: 680px;
     background-image: 
-        linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
-    background-size: 40px 40px;
+        linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px);
+    background-size: 50px 50px;
 }
 /* Linea di metà campo centrale */
 .campo-pro::after {
@@ -125,43 +125,43 @@ st.markdown("""
     left: 4%;
     width: 92%;
     height: 2px;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.3);
 }
 .reparto-row {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 14px;
     z-index: 2;
-    margin: 4px 0;
+    margin: 6px 0;
     flex-wrap: wrap;
 }
 .player-badge {
-    background: rgba(15, 23, 42, 0.92);
+    background: rgba(15, 23, 42, 0.94);
     border: 1px solid #38bdf8;
     border-radius: 12px;
     padding: 10px 6px 12px 6px;
     text-align: center;
-    width: 108px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    width: 112px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
     position: relative;
     overflow: hidden;
 }
 .player-avatar {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     background: #334155;
     border-radius: 50%;
     margin: 0 auto 6px auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 19px;
     border: 2px solid #64748b;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
 }
 .player-name-pro {
     font-weight: 700;
-    font-size: 11px;
+    font-size: 12px;
     color: #f8fafc;
     white-space: nowrap;
     overflow: hidden;
@@ -169,7 +169,7 @@ st.markdown("""
     padding: 0 2px;
 }
 .player-sub {
-    font-size: 9px;
+    font-size: 10px;
     color: #38bdf8;
     margin-top: 2px;
     font-weight: 600;
@@ -182,7 +182,7 @@ st.markdown("""
     font-size: 9px;
     font-weight: bold;
     color: #e2e8f0;
-    background: rgba(51, 65, 85, 0.8);
+    background: rgba(51, 65, 85, 0.85);
     padding: 1px 4px;
     border-radius: 4px;
 }
@@ -324,7 +324,7 @@ else:
         # 1. Attacco (In alto)
         html_campo += "<div class='reparto-row'>"
         for g in formazione["Attacco"]:
-            html_campo += genera_card_giocatore(g, "⚽")
+            html_campo += genera_card_giocatore(g, "🎯")
         html_campo += "</div>"
 
         # 2. Centrocampo
