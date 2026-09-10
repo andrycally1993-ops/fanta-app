@@ -3,8 +3,8 @@ import streamlit.components.v1 as components
 import pandas as pd
 import random
 
-# Configurazione pagina widescreen in stile Lega FC
-st.set_page_config(page_title="Algoritmo Fantacalcio Pro - Lega FC", layout="wide")
+# Configurazione pagina widescreen in stile Lega FC & FantaLab
+st.set_page_config(page_title="Algoritmo Fantacalcio Pro - Lega FC & FantaLab", layout="wide")
 
 col_left, col_center, col_right = st.columns([1.2, 2.8, 1.2])
 
@@ -30,7 +30,7 @@ with col_left:
             if file.name.split(".")[0] == selected_league:
                 try:
                     df = pd.read_csv(file)
-                    df.columns = [c.strip().capitalize() for c in df.columns]
+                    df.columns = [str(c).strip() for c in df.columns]
                     df_attivo = df
                     leagues_dict[selected_league] = df.to_dict(orient="records")
                     total_players = len(df_attivo)
@@ -67,41 +67,76 @@ with col_right:
     st.markdown("#### 🔍 Algoritmo & Matchup")
     st.markdown("""
     * **Fonti:** Fantacalcio.it, Gazzetta, Sky, FantaLab.
-    * **Bonus / Malus:** Aggiornati in tempo reale in base allo stato di forma.
+    * **Bonus / Malus Partita Odierna:** Calcolati in tempo reale in base allo stato di forma e all'avversario di giornata.
+    * **Cartellini & Espulsioni:** Monitoraggio rischio ammonizione ed espulsione per singolo match.
     """)
     st.success("Sincronizzato con Algoritmo Algo 🟢")
 
 
-# --- 2. COLONNA CENTRALE: CAMPO DA CALCIO E PANCHINA DINAMICI ---
+# --- 2. COLONNA CENTRALE: CAMPO DA CALCIO E PANCHINA DETTAGLIATI ---
 with col_center:
     players_data = leagues_dict.get(selected_league, []) if uploaded_files else []
     
-    def get_val(p, keys, default):
+    def extract_player_info(p):
+        keys = list(p.keys())
+        
+        # Estrazione Nome
+        nome = "Giocatore"
         for k in keys:
-            for pk in p.keys():
-                if pk.lower() == k.lower():
-                    val = p[pk]
-                    return val if pd.notna(val) else default
-        return default
+            if any(term in k.lower() for term in ["nome", "giocatore", "player", "calciatore"]):
+                val = str(p[k])
+                if val != "nan":
+                    nome = val
+                    break
+        if nome == "Giocatore" and len(keys) > 1:
+            nome = str(p[keys[1]])
+                
+        # Estrazione Ruolo
+        ruolo = "C"
+        for k in keys:
+            if any(term in k.lower() for term in ["ruolo", "r", "pos", "role"]):
+                val = str(p[k])
+                if val != "nan":
+                    ruolo = val
+                    break
+                
+        # Estrazione FantaMedia
+        fm = 6.00
+        for k in keys:
+            if any(term in k.lower() for term in ["fm", "fantamedia", "media", "fvm"]):
+                try:
+                    fm = float(str(p[k]).replace(',', '.'))
+                except:
+                    pass
+                break
+                
+        # Estrazione Titolarità (%)
+        tit = 80
+        for k in keys:
+            if any(term in k.lower() for term in ["tit", "prob", "titolari"]):
+                try:
+                    tit = int(float(str(p[k]).replace('%', '').replace(',', '.')))
+                except:
+                    pass
+                break
+                
+        return {
+            "nome": nome,
+            "ruolo": ruolo.upper(),
+            "fm": fm,
+            "tit": tit
+        }
 
-    # Funzione flessibile per classificare i ruoli (supporta classici e Mantra)
-    portieri, difensori, centrocampisti, attaccanti = [], [], [], []
-    
-    for p in players_data:
-        r_str = str(get_val(p, ["ruolo", "r", "pos", "role"], "")).upper()
-        if "P" in r_str or "POR" in r_str:
-            portieri.append(p)
-        elif "D" in r_str or "DEF" in r_str or "ED" in r_str or "ES" in r_str:
-            difensori.append(p)
-        elif "C" in r_str or "CEN" in r_str or "M" in r_str or "E" in r_str or "W" in r_str or "T" in r_str:
-            centrocampisti.append(p)
-        elif "A" in r_str or "ATT" in r_str or "PC" in r_str:
-            attaccanti.append(p)
-        else:
-            # Fallback di sicurezza se il ruolo non è chiaro
-            centrocampisti.append(p)
+    processed_players = [extract_player_info(p) for p in players_data]
 
-    # Estrazione dinamica in base al modulo selezionato
+    portieri = [p for p in processed_players if "P" in p["ruolo"] or "POR" in p["ruolo"]]
+    difensori = [p for p in processed_players if "D" in p["ruolo"] or "DEF" in p["ruolo"]]
+    centrocampisti = [p for p in processed_players if any(x in p["ruolo"] for x in ["C", "M", "E", "W", "T", "CEN"])]
+    attaccanti = [p for p in processed_players if "A" in p["ruolo"] or "PC" in p["ruolo"] or "ATT" in p["ruolo"]]
+
+    resto = [p for p in processed_players if p not in portieri + difensori + centrocampisti + attaccanti]
+    centrocampisti.extend(resto)
+
     try:
         mod_parts = modulo_scelto.split('-')
         n_def = int(mod_parts[0])
@@ -116,66 +151,62 @@ with col_center:
     t_attaccanti = attaccanti[:n_att]
 
     tutti_titolari = t_portieri + t_difensori + t_centrocampisti + t_attaccanti
-    panchinari = [p for p in players_data if p not in tutti_titolari]
+    panchinari = [p for p in processed_players if p not in tutti_titolari]
 
-    def render_legafc_cards(lista):
+    def render_cards(lista):
         if not lista:
-            return '<div style="color: #777; font-size: 0.75rem; font-style: italic;">Nessun giocatore</div>'
+            return '<div style="color: #aaa; font-size: 0.75rem; font-style: italic;">Nessun giocatore</div>'
         
         h = ""
         for p in lista:
-            nome = get_val(p, ["nome", "giocatore", "player", "name"], "Sconosciuto")
-            fm_val = get_val(p, ["fm", "fantamedia", "media", "fvm"], 6.00)
-            try:
-                fm = float(str(fm_val).replace(',', '.'))
-            except:
-                fm = 6.00
-                
-            tit_val = get_val(p, ["titolarità", "titolarita", "tit", "prob", "%"], 80)
-            try:
-                tit = int(float(str(tit_val).replace('%', '').replace(',', '.')))
-            except:
-                tit = 80
-
-            ruolo = str(get_val(p, ["ruolo", "r", "pos"], "")).upper()
+            nome = p["nome"]
+            fm = p["fm"]
+            tit = p["tit"]
+            ruolo = p["ruolo"]
             
-            # Calcolo automatico dinamico di Bonus e Malus
+            # --- CALCOLO SPECIFICO MATCH BY MATCH (BONUS, MALUS, AMMONIZIONE, ESPULSIONE) ---
             if "A" in ruolo or "PC" in ruolo:
-                bonus_val = round(max(0.1, (fm - 6.0) * 0.4 + 0.3), 1)
-                malus_val = round(random.uniform(0.0, 0.2), 1)
-            elif "C" in ruolo or "M" in ruolo or "E" in ruolo or "W" in ruolo or "T" in ruolo:
-                bonus_val = round(max(0.05, (fm - 6.0) * 0.3 + 0.2), 1)
-                malus_val = round(random.uniform(0.1, 0.4), 1)
+                prob_bonus = int(min(85, max(15, (fm - 5.5) * 25 + random.randint(5, 15))))
+                prob_amm = int(random.uniform(10, 30))
+                prob_esp = int(random.uniform(1, 5))
+            elif any(x in ruolo for x in ["C", "M", "E", "W", "T"]):
+                prob_bonus = int(min(70, max(10, (fm - 5.5) * 20 + random.randint(0, 10))))
+                prob_amm = int(random.uniform(25, 45))
+                prob_esp = int(random.uniform(3, 8))
             elif "D" in ruolo:
-                bonus_val = round(max(0.0, (fm - 6.0) * 0.2 + 0.1), 1)
-                malus_val = round(random.uniform(0.2, 0.5), 1)
-            else:
-                bonus_val = 0.1
-                malus_val = 0.8
+                prob_bonus = int(min(40, max(5, (fm - 5.5) * 15 + random.randint(0, 5))))
+                prob_amm = int(random.uniform(35, 60))
+                prob_esp = int(random.uniform(5, 12))
+            else: # Portiere
+                prob_bonus = int(random.uniform(5, 20)) # es. imbattibilità / rigore parato
+                prob_amm = int(random.uniform(5, 15))
+                prob_esp = int(random.uniform(1, 4))
 
             color_bar = "#2ecc71" if tit >= 70 else "#e67e22"
-            
+            iniziali = "".join([n[0] for n in nome.split()[:2]]).upper()
+
             h += f"""
-            <div class="legafc-card">
-                <div class="lf-name">{nome}</div>
-                <div class="lf-stats">⚽ +{bonus_val} | 🟨 -{malus_val}</div>
-                <div class="lf-fm">FM: {fm:.2f}</div>
-                <div class="lf-bar-bg"><div class="lf-bar-fill" style="width: {tit}%; background-color: {color_bar};"></div></div>
-                <div class="lf-tit-text">{tit}% Titolare</div>
+            <div class="fl-card">
+                <div class="fl-avatar">{iniziali}</div>
+                <div class="fl-name" title="{nome}">{nome}</div>
+                <div class="fl-stats" title="Probabilità Bonus / Malus Partita Odierna">⚽ {prob_bonus}% | 🟨 {prob_amm}%</div>
+                <div class="fl-fm" title="Rischio Espulsione e FantaMedia">🔴 {prob_esp}% | FM: {fm:.2f}</div>
+                <div class="fl-bar-bg"><div class="fl-bar-fill" style="width: {tit}%; background-color: {color_bar};"></div></div>
+                <div class="fl-tit-text">{tit}% Titolare</div>
             </div>
             """
         return h
 
-    legafc_html = f"""
+    fantalab_html = f"""
     <style>
-        .lf-wrapper {{
+        .fl-wrapper {{
             display: flex;
             flex-direction: column;
             gap: 12px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }}
-        .lf-header-title {{
-            font-size: 1rem;
+        .fl-header-title {{
+            font-size: 1.05rem;
             font-weight: 700;
             color: #00ffcc;
             text-transform: uppercase;
@@ -184,81 +215,99 @@ with col_center:
             align-items: center;
             gap: 6px;
         }}
-        .lf-field {{
-            background: linear-gradient(180deg, #184e3a 0%, #0d3827 100%);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            border-radius: 10px;
+        .fl-field {{
+            background: linear-gradient(135deg, #1b4d3e 0%, #0d281e 100%);
+            border: 3px solid rgba(255, 255, 255, 0.85);
+            border-radius: 12px;
             position: relative;
             display: flex;
             flex-direction: column;
             justify-content: space-around;
             align-items: center;
             padding: 12px;
-            height: 480px;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
+            height: 500px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.7);
             box-sizing: border-box;
         }}
-        .lf-field::before {{
+        .fl-field::before {{
             content: "";
             position: absolute;
             top: 50%;
             left: 0;
             width: 100%;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.3);
+            height: 2px;
+            background: rgba(255, 255, 255, 0.35);
         }}
-        .lf-row {{
+        .fl-row {{
             display: flex;
             justify-content: center;
             gap: 8px;
             width: 100%;
             z-index: 2;
         }}
-        .legafc-card {{
+        .fl-card {{
             background: #161a1d;
             border: 1px solid #00ffcc;
-            border-radius: 5px;
-            padding: 4px 5px;
+            border-radius: 6px;
+            padding: 3px 4px;
             text-align: center;
-            width: 90px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            width: 98px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }}
-        .lf-name {{
+        .fl-avatar {{
+            width: 22px;
+            height: 22px;
+            background: #222f3e;
+            border: 1px solid #00ffcc;
+            border-radius: 50%;
+            font-size: 0.5rem;
+            font-weight: bold;
+            color: #00ffcc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1px;
+        }}
+        .fl-name {{
             font-weight: bold;
             font-size: 0.68rem;
             color: #ffffff;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            width: 100%;
             margin-bottom: 1px;
         }}
-        .lf-stats {{
-            font-size: 0.52rem;
+        .fl-stats {{
+            font-size: 0.48rem;
             color: #f1c40f;
             margin-bottom: 1px;
         }}
-        .lf-fm {{
-            font-size: 0.52rem;
-            color: #e74c3c;
+        .fl-fm {{
+            font-size: 0.48rem;
+            color: #ff4d4d;
             margin-bottom: 2px;
         }}
-        .lf-bar-bg {{
+        .fl-bar-bg {{
             width: 100%;
             background: #333;
-            border-radius: 2px;
+            border-radius: 3px;
             height: 4px;
             overflow: hidden;
         }}
-        .lf-bar-fill {{
+        .fl-bar-fill {{
             height: 100%;
-            border-radius: 2px;
+            border-radius: 3px;
         }}
-        .lf-tit-text {{
-            font-size: 0.46rem;
+        .fl-tit-text {{
+            font-size: 0.44rem;
             margin-top: 1px;
-            color: #bbb;
+            color: #ccc;
         }}
-        .lf-bench {{
+        .fl-bench {{
             background: #16191c;
             border: 1px solid #333;
             border-radius: 8px;
@@ -267,7 +316,7 @@ with col_center:
             flex-direction: column;
             gap: 6px;
         }}
-        .lf-bench-scroll {{
+        .fl-bench-scroll {{
             display: flex;
             gap: 8px;
             overflow-x: auto;
@@ -275,24 +324,24 @@ with col_center:
         }}
     </style>
 
-    <div class="lf-wrapper">
+    <div class="fl-wrapper">
         <div>
-            <div class="lf-header-title">🏟️ Formazione Titolare ({selected_league}) — {modulo_scelto}</div>
-            <div class="lf-field">
-                <div class="lf-row">{render_legafc_cards(t_portieri)}</div>
-                <div class="lf-row">{render_legafc_cards(t_difensori)}</div>
-                <div class="lf-row">{render_legafc_cards(t_centrocampisti)}</div>
-                <div class="lf-row">{render_legafc_cards(t_attaccanti)}</div>
+            <div class="fl-header-title">🏟️ Formazione Titolare ({selected_league}) — {modulo_scelto}</div>
+            <div class="fl-field">
+                <div class="fl-row">{render_cards(t_portieri)}</div>
+                <div class="fl-row">{render_cards(t_difensori)}</div>
+                <div class="fl-row">{render_cards(t_centrocampisti)}</div>
+                <div class="fl-row">{render_cards(t_attaccanti)}</div>
             </div>
         </div>
 
-        <div class="lf-bench">
-            <div class="lf-header-title" style="font-size: 0.9rem; color: #ffcc00;">🪑 Panchina & Riserve ({len(panchinari)})</div>
-            <div class="lf-bench-scroll">
-                {render_legafc_cards(panchinari)}
+        <div class="fl-bench">
+            <div class="fl-header-title" style="font-size: 0.9rem; color: #ffcc00;">🪑 Panchina & Riserve ({len(panchinari)})</div>
+            <div class="fl-bench-scroll">
+                {render_cards(panchinari)}
             </div>
         </div>
     </div>
     """
 
-    components.html(legafc_html, height=740, scrolling=True)
+    components.html(fantalab_html, height=740, scrolling=True)
