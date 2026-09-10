@@ -3,12 +3,12 @@ import streamlit as st
 # Configurazione della pagina
 st.set_page_config(page_title="FantAlgoritmo - Formazione Titolare", layout="wide")
 
-# Intestazione dell'app stile Algo / FantaLab
+# Intestazione dell'app
 st.markdown("""
     <div style="display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa; padding: 10px 20px; border-radius: 8px; border-bottom: 3px solid #2e7d32;">
         <h2 style="margin: 0; color: #1e293b;">⚽ FantAlgoritmo - Formazione Titolare</h2>
         <div>
-            <span style="background-color: #e2e8f0; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-right: 10px;">Totale Rosa: 25</span>
+            <span style="background-color: #e2e8f0; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-right: 10px; color: #334155;">Totale Rosa: 25</span>
             <span style="background-color: #dcfce7; color: #166534; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;">Indice Rosa: 8.6 / 10</span>
         </div>
     </div>
@@ -16,19 +16,23 @@ st.markdown("""
 
 st.write("")
 
-# Filtro rosa
-st.selectbox("Seleziona la rosa da visualizzare:", ["la beneamata ma non troppo"])
+# Filtri: Rosa e Modulo di gioco
+col_f1, col_f2 = st.columns([2, 1])
+with col_f1:
+    st.selectbox("Seleziona la rosa da visualizzare:", ["la beneamata ma non troppo"])
+with col_f2:
+    modulo_scelto = st.selectbox("Cambia Modulo:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2", "3-4-2-1"])
 
 # Layout principale: Campo Titolari (Sinistra) e Panchina (Destra)
 col_campo, col_panchina = st.columns([2, 1])
 
 with col_campo:
-    # Sezione Campo da Calcio con stili CSS avanzati e icone
-    st.markdown("""
+    # Sezione Campo da Calcio con stili e dinamica del modulo
+    st.markdown(f"""
         <div style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); padding: 20px; border-radius: 12px; border: 2px solid #155724; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <div style="display: flex; align-items: center; margin-bottom: 15px; color: white;">
                 <span style="font-size: 20px; margin-right: 8px;">🏟️</span>
-                <h3 style="margin: 0; font-size: 18px; color: white;">Campo Titolari (3-4-3)</h3>
+                <h3 style="margin: 0; font-size: 18px; color: white;">Campo Titolari ({modulo_scelto})</h3>
             </div>
             
             <!-- Attacco -->
@@ -106,11 +110,11 @@ with col_campo:
     """, unsafe_allow_html=True)
 
 with col_panchina:
-    # Sezione Panchina con icona panchina/legno e dati dettagliati
+    # Sezione Panchina con icona della sedia in legno (🪑)
     st.markdown("""
         <div style="background-color: #ffffff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <div style="display: flex; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">
-                <span style="font-size: 20px; margin-right: 8px;">🪵</span>
+                <span style="font-size: 20px; margin-right: 8px;">🪑</span>
                 <h3 style="margin: 0; font-size: 16px; color: #1e293b;">Panchina & Riserve</h3>
             </div>
     """, unsafe_allow_html=True)
