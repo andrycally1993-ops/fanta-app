@@ -19,7 +19,6 @@ class FantAlgoritmoPro:
             v_mercato = 10
             titolarita = 90.0
 
-        # URL per foto ritratto realistiche dei calciatori (Placeholder pulito ad alta definizione)
         avatar_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
 
         giocatore = {
@@ -39,7 +38,6 @@ class FantAlgoritmoPro:
     def calcola_formazione(self, modulo="3-4-3"):
         lista = st.session_state.giocatori
         
-        # Ordinamento: Prima per titolarità, poi per fantamedia
         portieri = sorted([g for g in lista if g["ruolo"] == 'P'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
         difensori = sorted([g for g in lista if g["ruolo"] == 'D'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
         centrocampisti = sorted([g for g in lista if g["ruolo"] == 'C'], key=lambda x: (x["titolarita"], x["fanta_media"]), reverse=True)
@@ -86,29 +84,25 @@ class FantAlgoritmoPro:
 app = FantAlgoritmoPro()
 
 # ==========================================
-# STYLING CSS "FANTALAB / LEGHE FC" STYLE
+# STYLING CSS "FANTALAB / LEGHE FC" BLU STYLE
 # ==========================================
 st.markdown("""
 <style>
 .stApp {
-    background-color: #0b1120;
+    background-color: #1a233a;
     color: #ffffff;
 }
 .campo-fantalab {
-    background: linear-gradient(135deg, #134e38 0%, #0d3828 50%, #061d14 100%);
-    border: 2px solid rgba(56, 189, 248, 0.3);
+    background: linear-gradient(135deg, #1b365d 0%, #12223b 50%, #0b1526 100%);
+    border: 2px solid rgba(59, 130, 246, 0.4);
     border-radius: 16px;
     padding: 25px 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 600px;
-    background-image: 
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
 }
 .campo-fantalab::after {
     content: "";
@@ -122,19 +116,19 @@ st.markdown("""
 .reparto-line {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     z-index: 2;
     margin: 4px 0;
     flex-wrap: wrap;
 }
 .fl-card {
-    background: rgba(15, 23, 42, 0.95);
-    border: 1px solid #334155;
-    border-radius: 8px;
+    background: rgba(30, 48, 80, 0.9);
+    border: 1px solid #3b82f6;
+    border-radius: 10px;
     padding: 6px 4px;
     text-align: center;
     width: 95px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     position: relative;
 }
 .fl-avatar {
@@ -143,9 +137,8 @@ st.markdown("""
     border-radius: 50%;
     margin: 0 auto 3px auto;
     object-fit: cover;
-    background-color: #1e293b;
+    background-color: #2a4365;
 }
-/* Colori del bordo foto in base alla titolarità stile FantaLab */
 .border-green { border: 2px solid #22c55e; }
 .border-yellow { border: 2px solid #eab308; }
 .border-red { border: 2px solid #ef4444; }
@@ -153,14 +146,14 @@ st.markdown("""
 .fl-name {
     font-weight: 700;
     font-size: 11px;
-    color: #f8fafc;
+    color: #ffffff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .fl-sub {
     font-size: 9px;
-    color: #94a3b8;
+    color: #93c5fd;
     margin-top: 1px;
 }
 .fl-badge-score {
@@ -171,13 +164,13 @@ st.markdown("""
     font-weight: bold;
     color: #ffffff;
     background: rgba(15, 23, 42, 0.85);
-    border: 1px solid #64748b;
+    border: 1px solid #60a5fa;
     padding: 1px 3px;
     border-radius: 3px;
 }
 .trade-box-fl {
-    background: rgba(30, 41, 59, 0.85);
-    border: 1px solid #475569;
+    background: rgba(30, 48, 80, 0.85);
+    border: 1px solid #3b82f6;
     border-radius: 8px;
     padding: 8px;
     margin-bottom: 8px;
@@ -239,14 +232,13 @@ with st.sidebar:
                             try: valore_mercato = int(float(str(riga[idx_val]).replace(',', '.')))
                             except: pass
 
-                        # Simulazione logica titolarità (es. Provedel panchinaro con indice basso)
                         nome_str = str(nome).lower()
                         if "provedel" in nome_str:
-                            titolarita = 15.0  # Panchinaro (bassa titolarità -> finisce in panchina)
+                            titolarita = 15.0
                         elif fanta_media > 6.8:
-                            titolarita = 98.0  # Titolare sicuro
+                            titolarita = 98.0
                         else:
-                            titolarita = 80.0  # Titolare standard
+                            titolarita = 80.0
 
                         if app.aggiungi_giocatore(nome, ruolo, fanta_media, valore_mercato, titolarita):
                             count += 1
@@ -287,7 +279,6 @@ else:
         
         def render_card(g):
             tit = g.get('titolarita', 90)
-            # Assegna la classe CSS del bordo foto in base alla percentuale stile FantaLab
             if tit >= 75:
                 border_class = "border-green"
             elif tit >= 40:
@@ -304,7 +295,6 @@ else:
                 <div class='fl-sub'>{g['ruolo']} • {g['fanta_media']}</div>
             </div>"""
 
-        # Reparti sul campo
         html_campo += "<div class='reparto-line'>"
         for g in formazione["Attacco"]: html_campo += render_card(g)
         html_campo += "</div>"
@@ -341,15 +331,15 @@ else:
                         <img src='{cedente['avatar']}' style='width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ef4444;' />
                         <div style='font-size: 8px; white-space: nowrap; overflow: hidden;'>{cedente['nome']}</div>
                     </div>
-                    <div style='font-size: 14px; color: #94a3b8;'>➔</div>
+                    <div style='font-size: 14px; color: #93c5fd;'>➔</div>
                     <div style='text-align: center; width: 40px;'>
                         <span style='font-size: 8px; color: #22c55e; font-weight: bold;'>PRENDI</span>
                         <img src='{acquirente['avatar']}' style='width: 30px; height: 30px; border-radius: 50%; border: 1px solid #22c55e;' />
                         <div style='font-size: 8px; white-space: nowrap; overflow: hidden;'>{acquirente['nome']}</div>
                     </div>
                     <div style='flex-grow: 1; margin-left: 10px;'>
-                        <div style='font-size: 10px; font-weight: bold; color: #f8fafc;'>Motivazione</div>
-                        <div style='font-size: 9px; color: #94a3b8;'>{s['testo']}</div>
+                        <div style='font-size: 10px; font-weight: bold; color: #ffffff;'>Motivazione</div>
+                        <div style='font-size: 9px; color: #93c5fd;'>{s['testo']}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
