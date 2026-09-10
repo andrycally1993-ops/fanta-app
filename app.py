@@ -1,10 +1,18 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+# Configurazione della pagina Streamlit a schermo intero
+st.set_page_config(page_title="Lega FC - Dashboard", layout="wide")
+
+# Qui dentro incolli TUTTO il codice HTML, CSS e le modifiche che abbiamo fatto
+html_code = """
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <title>Lega FC - Gestione Multi-Squadra & Algoritmo</title>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 10px; }
         .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; }
         .team-selector select { background: #0f172a; color: #38bdf8; border: 1px solid #334155; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .container { display: flex; gap: 20px; }
@@ -188,3 +196,7 @@
 
 </body>
 </html>
+"""
+
+# Questo comando dice a Streamlit di visualizzare la pagina web pulita senza errori di sintassi
+components.html(html_code, height=720, scrolling=True)
