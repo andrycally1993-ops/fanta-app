@@ -2,10 +2,10 @@ import streamlit as st
 import csv
 import io
 
-# Configurazione pagina per sfruttare tutto lo spazio (stile app professionale)
-st.set_page_config(page_title="FantAlgoritmo Pro", page_icon="⚽", layout="wide")
+# Configurazione pagina a tutto schermo
+st.set_page_config(page_title="FantAlgoritmo Pro - Campo", page_icon="⚽", layout="wide")
 
-class FantAlgoritmoPro:
+class FantAlgoritmoCampo:
     def __init__(self):
         if 'giocatori' not in st.session_state:
             st.session_state.giocatori = []
@@ -18,12 +18,10 @@ class FantAlgoritmoPro:
             f_media = 6.5
             v_mercato = 10
 
-        # Parametri standard per calcolo score
+        # Calcolo score di schierabilità
         indice_partita = 2
-        titolarita = 0.85
-        bonus_malus = 0.0
-
-        score_schierabilita = ((f_media + bonus_malus) * titolarita) - (indice_partita * 0.3)
+        titolarita = 0.90 if f_media > 6.3 else 0.70
+        score_schierabilita = ((f_media) * titolarita) - (indice_partita * 0.2)
         
         giocatore = {
             "nome": str(nome).strip(),
@@ -40,10 +38,10 @@ class FantAlgoritmoPro:
 
     def calcola_formazione(self, modulo="3-4-3"):
         lista = st.session_state.giocatori
-        portieri = sorted([g for g in lista if g["ruolo"] == 'P'], key=lambda x: x["score"], reverse=True)
-        difensori = sorted([g for g in lista if g["ruolo"] == 'D'], key=lambda x: x["score"], reverse=True)
-        centrocampisti = sorted([g for g in lista if g["ruolo"] == 'C'], key=lambda x: x["score"], reverse=True)
-        attaccanti = sorted([g for g in lista if g["ruolo"] == 'A'], key=lambda x: x["score"], reverse=True)
+        portieri = sorted([g for g in lista if g["ruolo"] == 'P'], key=lambda x: x["fanta_media"], reverse=True)
+        difensori = sorted([g for g in lista if g["ruolo"] == 'D'], key=lambda x: x["fanta_media"], reverse=True)
+        centrocampisti = sorted([g for g in lista if g["ruolo"] == 'C'], key=lambda x: x["fanta_media"], reverse=True)
+        attaccanti = sorted([g for g in lista if g["ruolo"] == 'A'], key=lambda x: x["fanta_media"], reverse=True)
 
         try:
             mod_parti = [int(x) for x in modulo.split("-")]
@@ -72,27 +70,59 @@ class FantAlgoritmoPro:
         consigli = []
         lista = st.session_state.giocatori
         if not lista:
-            return ["Carica la tua rosa per ricevere consigli mirati."]
-        
+            return ["Carica la rosa per sbloccare i consigli."]
         for g in lista:
             if g["fanta_media"] < 6.0 and g["ruolo"] in ['C', 'A']:
-                consigli.append(f"⚠️ **Attenzione a {g['nome']} ({g['ruolo']})**: Fanta-media bassa ({g['fanta_media']}). Valuta uno scambio.")
-            elif g["valore_mercato"] > 30 and g["fanta_media"] < 6.5:
-                consigli.append(f"🔄 **Opportunità Scambio**: {g['nome']} ha un'alta quotazione ({g['valore_mercato']}) ma rendimento altalenante. Ottimo da cedere.")
-        
+                consigli.append(f"⚠️ **{g['nome']} ({g['ruolo']})**: Rendimento basso (FM {g['fanta_media']}). Valuta cessione.")
         if not consigli:
-            consigli.append("✅ La tua rosa è ben bilanciata al momento!")
+            consigli.append("✅ Rosa in salute e ben bilanciata!")
         return consigli
 
-app = FantAlgoritmoPro()
+app = FantAlgoritmoCampo()
 
 # ==========================================
-# INTERFACCIA GRAFICA STILE APPLICAZIONE
+# STYLING CAMPO DA CALCIO (CSS)
 # ==========================================
-st.title("⚽ FantAlgoritmo - Live Manager")
-st.markdown("Gestione automatica della formazione e consigli intelligenti per la tua rosa.")
+st.markdown("""
+<style>
+.campo-container {
+    background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
+    border: 4px solid #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    color: white;
+    text-align: center;
+    margin-bottom: 20px;
+}
+.reparto-linea {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+.giocatore-card {
+    background: rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-width: 120px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.giocatore-nome {
+    font-weight: bold;
+    font-size: 14px;
+    color: #ffeb3b;
+}
+.giocatore-info {
+    font-size: 11px;
+    color: #e0e0e0;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# Sidebar per il caricamento file
+# SIDEBAR: CARICAMENTO FILE
 with st.sidebar:
     st.header("📁 Gestione Rosa")
     uploaded_file = st.file_uploader("Carica file CSV Leghe FC", type=["csv"])
@@ -110,7 +140,6 @@ with st.sidebar:
             count = 0
             
             if righe:
-                # Trova indici intestazione intelligenti
                 header = [str(h).strip().lower() for h in righe[0]]
                 idx_nome, idx_ruolo, idx_fm, idx_val = 0, 1, -1, -1
                 
@@ -125,15 +154,15 @@ with st.sidebar:
                     try:
                         nome = riga[idx_nome] if idx_nome < len(riga) else riga[0]
                         
-                        # Cerca il ruolo corretto (P, D, C, A)
                         ruolo = "C"
                         for item in riga:
-                            item_clean = str(item).strip().upper()
-                            if item_clean in ['P', 'D', 'C', 'A'] or item_clean in ['P*', 'D*', 'C*', 'A*']:
-                                ruolo = item_clean.replace('*', '')
+                            item_clean = str(item).strip().upper().replace('*','')
+                            if item_clean in ['P', 'D', 'C', 'A']:
+                                ruolo = item_clean
                                 break
-                        if idx_ruolo < len(riga) and str(riga[idx_ruolo]).strip().upper().replace('*','') in ['P', 'D', 'C', 'A']:
-                            ruolo = str(riga[idx_ruolo]).strip().upper().replace('*','')
+                        if idx_ruolo < len(riga):
+                            r_cand = str(riga[idx_ruolo]).strip().upper().replace('*','')
+                            if r_cand in ['P', 'D', 'C', 'A']: ruolo = r_cand
 
                         fanta_media = 6.5
                         if idx_fm != -1 and idx_fm < len(riga):
@@ -162,45 +191,71 @@ with st.sidebar:
         st.rerun()
 
 # CORPO PRINCIPALE
+st.title("⚽ FantAlgoritmo - Campo Live")
+
 if not st.session_state.giocatori:
-    st.info("👋 **Benvenuto!** Carica il file CSV della tua squadra dal pannello a sinistra per visualizzare subito la formazione ottimizzata.")
+    st.info("👈 Carica il file CSV della tua squadra dal menu a sinistra per vedere la grafica sul campo da calcio.")
 else:
-    # Sezione Modulo interattivo (Aggiornamento in tempo reale senza bottoni)
-    col_mod1, col_mod2 = st.columns([2, 4])
-    with col_mod1:
+    # Selezione Modulo (Aggiornamento Automatico Immediato)
+    col_m1, col_m2 = st.columns([2, 4])
+    with col_m1:
         modulo_scelto = st.selectbox("🎯 Modulo Tattico:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
-    with col_mod2:
-        st.write(f"📊 **Giocatori in rosa:** {len(st.session_state.giocatori)}")
+    with col_m2:
+        st.write(f"📊 **Totale Rosa:** {len(st.session_state.giocatori)} giocatori")
 
     formazione = app.calcola_formazione(modulo_scelto)
-
     st.markdown("---")
-    
-    # Layout Grafico a Colonne (Simulazione Campo / Reparti Ordinati)
-    col_campo, col_mercato = st.columns([3, 2])
+
+    col_campo, col_lato = st.columns([3, 2])
 
     with col_campo:
-        st.subheader(f"📋 Formazione Titolare ({modulo_scelto})")
+        st.subheader(f"🏟️ Campo da Gioco ({modulo_scelto})")
         
-        for reparto, giocatori in formazione.items():
-            if reparto != "Panchina":
-                with st.container(border=True):
-                    st.markdown(f"**🟢 {reparto}**")
-                    if giocatori:
-                        for g in giocatori:
-                            st.markdown(f"- **{g['nome']}** | ⚽ Fanta-Media: `{g['fanta_media']}` | 📈 Score: `{g['score']}`")
-                    else:
-                        st.write("*(Nessun giocatore disponibile per questo reparto)*")
+        # RENDER DEL CAMPO DA CALCIO GRAFICO HTML
+        html_campo = "<div class='campo-container'>"
+        
+        # 1. Attacco (In alto sul campo)
+        html_campo += "<div style='font-size:12px; color:#a5d6a7; font-weight:bold;'>ATTACCO</div><div class='reparto-linea'>"
+        for g in formazione["Attacco"]:
+            html_campo += f"<div class='giocatore-card'><div class='giocatore-nome'>{g['nome']}</div><div class='giocatore-info'>FM: {g['fanta_media']}</div></div>"
+        if not formazione["Attacco"]: html_campo += "<div>Nessun attaccante</div>"
+        html_campo += "</div>"
 
+        # 2. Centrocampo
+        html_campo += "<div style='font-size:12px; color:#a5d6a7; font-weight:bold; margin-top:10px;'>CENTROCAMPO</div><div class='reparto-linea'>"
+        for g in formazione["Centrocampo"]:
+            html_campo += f"<div class='giocatore-card'><div class='giocatore-nome'>{g['nome']}</div><div class='giocatore-info'>FM: {g['fanta_media']}</div></div>"
+        if not formazione["Centrocampo"]: html_campo += "<div>Nessun centrocampista</div>"
+        html_campo += "</div>"
+
+        # 3. Difesa
+        html_campo += "<div style='font-size:12px; color:#a5d6a7; font-weight:bold; margin-top:10px;'>DIFESA</div><div class='reparto-linea'>"
+        for g in formazione["Difesa"]:
+            html_campo += f"<div class='giocatore-card'><div class='giocatore-nome'>{g['nome']}</div><div class='giocatore-info'>FM: {g['fanta_media']}</div></div>"
+        if not formazione["Difesa"]: html_campo += "<div>Nessun difensore</div>"
+        html_campo += "</div>"
+
+        # 4. Portiere (In basso sul campo)
+        html_campo += "<div style='font-size:12px; color:#a5d6a7; font-weight:bold; margin-top:10px;'>PORTIERE</div><div class='reparto-linea'>"
+        for g in formazione["Portiere"]:
+            html_campo += f"<div class='giocatore-card'><div class='giocatore-nome'>{g['nome']}</div><div class='giocatore-info'>FM: {g['fanta_media']}</div></div>"
+        if not formazione["Portiere"]: html_campo += "<div>Nessun portiere</div>"
+        html_campo += "</div>"
+
+        html_campo += "</div>"
+        
+        st.markdown(html_campo, unsafe_allow_html=True)
+
+        # PANCHINA
         with st.container(border=True):
-            st.markdown("**🪑 Panchina Consigliata**")
+            st.markdown("### 🪑 Panchina")
             if formazione["Panchina"]:
-                for g in formazione["Panchina"]:
-                    st.markdown(f"- {g['nome']} ({g['ruolo']}) | Score: `{g['score']}`")
+                panchina_testo = " | ".join([f"**{g['nome']}** ({g['ruolo']} - FM: {g['fanta_media']})" for g in formazione["Panchina"]])
+                st.markdown(panchina_testo)
             else:
-                st.write("*(Panchina vuota)*")
+                st.write("Panchina vuota.")
 
-    with col_mercato:
+    with col_lato:
         st.subheader("💡 Consigli & Scambi")
         with st.container(border=True):
             for consiglio in app.genera_scambi():
