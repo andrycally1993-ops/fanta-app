@@ -1,223 +1,126 @@
-import streamlit as st
-import streamlit.components.v1 as components
+# ==========================================
+# GESTORE COMPLETO FANTACALCIO (MODULI + BONUS/MALUS + TITOLARITÀ)
+# ==========================================
 
-# Configurazione della pagina Streamlit a schermo intero
-st.set_page_config(page_title="Lega FC - Dashboard", layout="wide")
+# 1. MODULI UFFICIALI LEGA FANTACALCIO (Classic)
+MODULI_LEGA_FC = [
+    "3-4-3", 
+    "3-5-2", 
+    "4-3-3", 
+    "4-4-2", 
+    "4-5-1", 
+    "5-3-2", 
+    "5-4-1"
+]
 
-# --- GESTIONE DATI ROSE COMPLETE (3 POR, 8 DIF, 8 CEN, 6 ATT) ---
-if "squadre" not in st.session_state:
-    st.session_state.squadre = {
-        "La Mia Squadra Principale": {
-            "POR": ["Maignan", "Sportiello", "Terracciano"],
-            "DIF": ["Bastoni", "Bremer", "Dimarco", "Buongiorno", "Calabria", "Hernandez", "Di Lorenzo", "Cambiaso"],
-            "CEN": ["Barella", "Pulisic", "Koopmeiners", "Zaccagni", "Calhanoglu", "Zieliński", "McTominay", "Pellegrini"],
-            "ATT": ["Lautaro", "Thuram", "Retegui", "Lookman", "Dybala", "Dovbyk"]
-        }
-    }
+# 2. TABELLA BONUS E MALUS STANDARD
+TABELLA_MALUS_BONUS = {
+    "gol_segnato": +3,
+    "assist": +1,
+    "rigore_segnato": +3,
+    "rigore_parato": +3,
+    "rigore_sbagliato": -3,
+    "ammonizione": -0.5,
+    "espulsione": -1,
+    "autogol": -2,
+    "gol_subito": -1
+}
 
-# --- BARRA LATERALE: GESTIONE RAPIDA SQUADRE E ROSE COMPLETE ---
-st.sidebar.header("⚙️ Gestione Squadre & Rosa Reale")
+class GiocatoreFantacalcio:
+    def __init__(self, nome, ruolo, indice_titolarita):
+        self.nome = nome
+        self.ruolo = ruolo  # P, D, C, A
+        self.indice_titolarita = indice_titolarita  # Valore da 0 a 100 (es. 90 = titolarissimo)
+        self.voto_base = 6.0
+        self.eventi = [] # Lista di eventi registrati (es. ["gol_segnato", "ammonizione"])
 
-with st.sidebar.expander("➕ Crea Nuova Squadra / Incolla Rosa"):
-    nome_nuova = st.text_input("Nome della Squadra:")
-    st.info("Inserisci i giocatori separati da virgola!")
-    
-    por_text = st.text_area("Portieri (3):", "Maignan, Sportiello, Terracciano")
-    dif_text = st.text_area("Difensori (8):", "Bastoni, Bremer, Dimarco, Buongiorno, Calabria, Hernandez, Di Lorenzo, Cambiaso")
-    cen_text = st.text_area("Centrocampisti (8):", "Barella, Pulisic, Koopmeiners, Zaccagni, Calhanoglu, Zieliński, McTominay, Pellegrini")
-    att_text = st.text_area("Attaccanti (6):", "Lautaro, Thuram, Retegui, Lookman, Dybala, Dovbyk")
-    
-    if st.button("Salva Rosa Completa"):
-        if nome_nuova:
-            st.session_state.squadre[nome_nuova] = {
-                "POR": [p.strip() for p in por_text.split(",")],
-                "DIF": [d.strip() for d in dif_text.split(",")],
-                "CEN": [c.strip() for c in cen_text.split(",")],
-                "ATT": [a.strip() for a in att_text.split(",")]
-            }
-            st.session_state.squadra_attiva = nome_nuova
-            st.sidebar.success(f"Rosa '{nome_nuova}' salvata con successo!")
-            st.rerun()
+    def aggiungi_evento(self, evento):
+        if evento in TABELLA_MALUS_BONUS:
+            self.eventi.append(evento)
 
-# Selezione della squadra attiva
-lista_squadre = list(st.session_state.squadre.keys())
-default_idx = len(lista_squadre) - 1 if "squadra_attiva" not in st.session_state else lista_squadre.index(st.session_state.get("squadra_attiva", lista_squadre[0]))
-squadra_selezionata = st.sidebar.selectbox("Seleziona Squadra Attiva:", lista_squadre, index=default_idx)
-st.session_state.squadra_attiva = squadra_selezionata
+    def calcola_fantavoto(self):
+        """Calcola il fantavoto partendo dal voto base, aggiungendo bonus e malus."""
+        fantavoto = self.voto_base
+        for ev in self.eventi:
+            fantavoto += TABELLA_MALUS_BONUS[ev]
+        return fantavoto
 
-rosa_attiva = st.session_state.squadre[squadra_selezionata]
 
-# --- SCELTA MODULO E SCHIERAMENTO TITOLARI DALLA ROSA ---
-st.sidebar.markdown("---")
-st.sidebar.header("📋 Schieramento Titolari (Formazione)")
+class GestoreFantacalcioCompleto:
+    def __init__(self):
+        self.rosa = []
 
-modulo = st.sidebar.selectbox("Scegli Modulo:", ["3-4-3", "3-5-2", "4-3-3", "4-4-2"])
+    def aggiungi_giocatore(self, giocatore):
+        self.rosa.append(giocatore)
 
-t_por = st.sidebar.selectbox("Portiere Titolare", rosa_attiva["POR"])
+    def valida_modulo(self, modulo):
+        """Verifica se il modulo rientra tra quelli ufficiali di Lega FC."""
+        if modulo not in MODULI_LEGA_FC:
+            return False, f"Modulo '{modulo}' non valido per Leghe FC."
+        return True, f"Modulo '{modulo}' valido."
 
-num_dif = int(modulo[0])
-num_cen = int(modulo[2])
-num_att = int(modulo[4])
+    def analizza_formazione(self, modulo_schierato, titolari_schierati):
+        """
+        Analizza la formazione inserita controllando il modulo, 
+        la titolarità media e calcolando i potenziali bonus/malus.
+        """
+        is_valido, msg = self.valida_modulo(modulo_schierato)
+        if not is_valido:
+            return msg
 
-t_dif = st.sidebar.multiselect(f"Difensori Titolari ({num_dif})", rosa_attiva["DIF"], default=rosa_attiva["DIF"][:num_dif])
-t_cen = st.sidebar.multiselect(f"Centrocampisti Titolari ({num_cen})", rosa_attiva["CEN"], default=rosa_attiva["CEN"][:num_cen])
-t_att = st.sidebar.multiselect(f"Attaccanti Titolari ({num_att})", rosa_attiva["ATT"], default=rosa_attiva["ATT"][:num_att])
-
-# Preparazione stringhe HTML per i reparti
-def crea_card(nome, tit="95%", b="15%", m="10%"):
-    if not nome: nome = "Senza nome"
-    return f"""
-    <div class="player-card">
-        <span class="p-name">{nome}</span>
-        <span class="stats-tag">Tit: {tit}</span>
-        <div class="bonus-malus"><span class="bonus">B: {b}</span> | <span class="malus">M: {m}</span></div>
-    </div>
-    """
-
-html_por = crea_card(t_por, "99%", "5%", "10%")
-html_dif = "".join([crea_card(d, "92%", "12%", "18%") for d in t_dif])
-html_cen = "".join([crea_card(c, "90%", "25%", "20%") for c in t_cen])
-html_att = "".join([crea_card(a, "95%", "50%", "12%") for a in t_att])
-
-# Riserve automatiche per la panchina
-riserve_por = [p for p in rosa_attiva["POR"] if p != t_por]
-riserve_dif = [d for d in rosa_attiva["DIF"] if d not in t_dif]
-riserve_cen = [c for c in rosa_attiva["CEN"] if c not in t_cen]
-riserve_att = [a for a in rosa_attiva["ATT"] if a not in t_att]
-
-html_panchina = ""
-for p in riserve_por[:1]: 
-    html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{p} (POR)</strong><span class="bench-stats">Tit: 95% | <span class="bonus">B: 4%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 90%</span></div>'
-for d in riserve_dif[:3]: 
-    html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{d} (DIF)</strong><span class="bench-stats">Tit: 88% | <span class="bonus">B: 8%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 85%</span></div>'
-for c in riserve_cen[:3]: 
-    html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{c} (CEN)</strong><span class="bench-stats">Tit: 90% | <span class="bonus">B: 35%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 88%</span></div>'
-for a in riserve_att[:2]: 
-    html_panchina += f'<div class="bench-item"><div class="bench-info"><strong>{a} (ATT)</strong><span class="bench-stats">Tit: 85% | <span class="bonus">B: 45%</span></span></div><span style="color: #38bdf8; font-weight: bold; font-size: 13px;">Alg: 87%</span></div>'
-
-# --- CODICE HTML/CSS PULITO (Senza f-string esterna per evitare conflitti) ---
-html_code = """
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>Lega FC - Dashboard Algoritmo</title>
-    <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 20px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .container { display: flex; gap: 25px; }
-        .field-container { flex: 2; background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        print(f"--- ANALISI FORMAZIONE CON MODULO: {modulo_schierato} ---")
         
-        /* Campo da calcio realistico */
-        .football-field {
-            position: relative;
-            width: 100%;
-            height: 700px;
-            background: linear-gradient(to bottom, #2e7d32, #1b5e20);
-            border: 3px solid #ffffff;
-            border-radius: 10px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            align-items: center;
-            padding: 20px 0;
-            box-sizing: border-box;
-        }
-        .football-field::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.6);
-        }
+        # Controllo reparti dal modulo (es. 3-4-3 -> Dif:3, Cen:4, Att:3)
+        pezzi = [int(x) for x in modulo_schierato.split('-')]
+        richiesti = {"D": pezzi[0], "C": pezzi[1], "A": pezzi[2]}
+        
+        # Conteggio ruoti schierati
+        conteggio = {"P": 0, "D": 0, "C": 0, "A": 0}
+        for g in titolari_schierati:
+            conteggio[g.ruolo] += 1
 
-        .row-players { display: flex; justify-content: center; gap: 15px; width: 100%; z-index: 2; flex-wrap: wrap; }
-        .player-card { 
-            background: rgba(15, 23, 42, 0.92); 
-            border: 1px solid #334155; 
-            padding: 8px 10px; 
-            border-radius: 8px; 
-            font-size: 12px; 
-            width: 110px; 
-            text-align: center; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
-        }
-        .player-card .p-name { display: block; font-weight: bold; color: #38bdf8; font-size: 13px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .stats-tag { font-size: 10px; color: #cbd5e1; display: block; font-weight: 600; }
-        .bonus-malus { font-size: 9px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 3px; }
-        .bonus { color: #4ade80; font-weight: bold; }
-        .malus { color: #f87171; font-weight: bold; }
+        # Verifica rispondenza numerica
+        if conteggio["P"] != 1 or conteggio["D"] != richiesti["D"] or conteggio["C"] != richiesti["C"] or conteggio["A"] != richiesti["A"]:
+            print("⚠️ ERRORE: I giocatori schierati non corrispondono al modulo scelto!")
+            print(Richiesti vs Schierati...)
+            return False
 
-        .sidebar { flex: 1; display: flex; flex-direction: column; gap: 25px; }
-        .card-box { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .bench-list { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }
-        .bench-item { background: #334155; padding: 10px 12px; border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
-        .bench-info { display: flex; flex-direction: column; gap: 2px; }
-        .bench-stats { font-size: 11px; color: #94a3b8; }
-    </style>
-</head>
-<body>
+        # Analisi indici di titolarità e fantavoti
+        titolarita_totale = 0
+        for g in titolari_schierati:
+            f_voto = g.calcola_fantavoto()
+            titolarita_totale += g.indice_titolarita
+            print(f"[{g.ruolo}] {g.nome} | Indice Titolare: {g.indice_titolarita}% | Fantavoto stimato: {f_voto}")
 
-    <div class="header">
-        <h1 style="margin: 0; font-size: 22px;">Lega FC - Squadra: <span style="color: #38bdf8;">REPLACE_SQUADRA</span></h1>
-        <div style="font-size: 14px; color: #cbd5e1;">Modulo: <strong style="color: #38bdf8;">REPLACE_MODULO</strong></div>
-    </div>
+        media_titolarita = titolarita_totale / len(titolari_schierati)
+        print(f"\n Indice di Affidabilità/Titolarità Medio della Formazione: {media_titolarita:.1f}%\n")
+        return True
 
-    <div class="container">
-        <!-- CAMPO TITOLARI -->
-        <div class="field-container">
-            <h3 style="margin-top: 0;">Formazione Consigliata & Algoritmo (Stadio)</h3>
-            <div class="football-field">
-                <!-- Portiere -->
-                <div class="row-players">
-                    REPLACE_POR
-                </div>
-                <!-- Difensori -->
-                <div class="row-players">
-                    REPLACE_DIF
-                </div>
-                <!-- Centrocampisti -->
-                <div class="row-players">
-                    REPLACE_CEN
-                </div>
-                <!-- Attaccanti -->
-                <div class="row-players">
-                    REPLACE_ATT
-                </div>
-            </div>
-        </div>
 
-        <!-- PANCHINA E RISERVE -->
-        <div class="sidebar">
-            <div class="card-box">
-                <h3 style="margin-top: 0;">Panchina & Riserve (🪑)</h3>
-                <div class="bench-list">
-                    REPLACE_PANCHINA
-                </div>
-            </div>
+# ==========================================
+# ESEMPIO PRATICO DI UTILIZZO
+# ==========================================
+if __name__ == "__main__":
+    gestore = GestoreFantacalcioCompleto()
 
-            <div class="card-box">
-                <h3 style="margin-top: 0;">Indice Rosa & Algoritmo</h3>
-                <p style="font-size: 14px; color: #cbd5e1; margin-bottom: 8px;">Totale Indice Rosa: <strong>88.2 / 100</strong></p>
-                <p style="font-size: 12px; color: #94a3b8; margin: 0; line-height: 1.4;">Incrocio fonti (Sky, Gazzetta, Fantacalcio): <strong>Affidabilità Massima</strong></p>
-            </div>
-        </div>
-    </div>
+    # Creazione di alcuni giocatori con relativo indice di titolarità (0-100)
+    p1 = GiocatoreFantacalcio("Svilar", "P", 95)
+    d1 = GiocatoreFantacalcio("Dimarco", "D", 90)
+    d2 = GiocatoreFantacalcio("Buongiorno", "D", 85)
+    d3 = GiocatoreFantacalcio("Bastoni", "D", 90)
+    c1 = GiocatoreFantacalcio("Pulisic", "C", 95)
+    c2 = GiocatoreFantacalcio("Barella", "C", 85)
+    c3 = GiocatoreFantacalcio("Calhanoglu", "C", 95)
+    c4 = GiocatoreFantacalcio("McTominay", "C", 80)
+    a1 = GiocatoreFantacalcio("Retegui", "A", 90)
+    a2 = GiocatoreFantacalcio("Thuram", "A", 90)
+    a3 = GiocatoreFantacalcio("Lookman", "A", 85)
 
-</body>
-</html>
-"""
+    # Simuliamo qualche bonus/malus per la giornata
+    p1.aggiungi_evento("ammonizione")  # -0.5
+    c1.aggiungi_evento("gol_segnato")  # +3
+    c1.aggiungi_evento("assist")       # +1
+    a1.aggiungi_evento("gol_segnato")  # +3
 
-# Sostituzioni pulite dei segnaposto nel codice HTML
-html_code = html_code.replace("REPLACE_SQUADRA", squadra_selezionata)
-html_code = html_code.replace("REPLACE_MODULO", modulo)
-html_code = html_code.replace("REPLACE_POR", html_por)
-html_code = html_code.replace("REPLACE_DIF", html_dif)
-html_code = html_code.replace("REPLACE_CEN", html_cen)
-html_code = html_code.replace("REPLACE_ATT", html_att)
-html_code = html_code.replace("REPLACE_PANCHINA", html_panchina)
-
-components.html(html_code, height=840, scrolling=True)
+    # Mettiamo in campo un 3-5-2
+    formazione_titolare = [p1, d1, d2, d3, c1, c2, c3, c4, a1, a2] # Nota: qui mancherebbe un centrocampista per il 3-5-2, aggiungiamone un altro per testare correttamente!
