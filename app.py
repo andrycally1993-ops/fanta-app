@@ -4,7 +4,7 @@ import pandas as pd
 import random
 
 # Configurazione pagina widescreen
-st.set_page_config(page_title="Algoritmo Fantacalcio Pro - Lega FC & FantaLab", layout="wide")
+st.set_page_config(page_title="Algoritmo Fantacalcio Pro - Lega FC & Algo", layout="wide")
 
 # Inizializzazione dello Stato di Sessione per mantenere salvate tutte le leghe caricate
 if "leagues_storage" not in st.session_state:
@@ -21,19 +21,16 @@ with col_left:
         accept_multiple_files=True
     )
     
-    # Memorizza in modo permanente nel session_state i file caricati senza sovrascriverli
     if uploaded_files:
         for file in uploaded_files:
             league_name = file.name.split(".")[0]
             try:
                 df = pd.read_csv(file)
                 df.columns = [str(c).strip() for c in df.columns]
-                # Salvataggio persistente
                 st.session_state.leagues_storage[league_name] = df.to_dict(orient="records")
             except Exception as e:
                 st.error(f"Errore nel file {league_name}: {e}")
 
-    # Se ci sono leghe salvate, mostra il selettore
     if st.session_state.leagues_storage:
         league_names = list(st.session_state.leagues_storage.keys())
         selected_league = st.selectbox("Seleziona Lega Attiva", league_names)
@@ -47,7 +44,7 @@ with col_left:
         current_players_data = []
         total_players = 0
         df_attivo = pd.DataFrame()
-        st.info("Carica uno o più file CSV: resteranno tutti salvati qui.")
+        st.info("Carica uno o più file CSV: resteranno tutti salvati in memoria.")
 
     st.markdown("---")
     st.markdown("### ⚙️ Moduli & Filtri")
@@ -75,13 +72,13 @@ with col_right:
     st.markdown("---")
     st.markdown("#### 🔍 Algoritmo & Matchup")
     st.markdown("""
-    * **Fonti:** Fantacalcio.it, Gazzetta, Sky, FantaLab.
-    * **Partita Odierna:** Bonus, Malus, Ammonizioni ed Espulsioni aggiornati in tempo reale.
+    * **Fonti:** Fantacalcio.it, Gazzetta, Sky, FantaLab, Algo.
+    * **Partita Odierna:** Bonus, Malus, Ammonizioni ed Espulsioni in tempo reale.
     """)
     st.success("Sincronizzato con Algoritmo Algo 🟢")
 
 
-# --- 2. COLONNA CENTRALE: CAMPO DA CALCIO E PANCHINA FANTALAB / LEGA FC ---
+# --- 2. COLONNA CENTRALE: CAMPO DA CALCIO E PANCHINA STILE LEGA FC / ALGO ---
 with col_center:
     def extract_player_info(p):
         keys = list(p.keys())
@@ -157,7 +154,7 @@ with col_center:
 
     def render_cards(lista):
         if not lista:
-            return '<div style="color: #aaa; font-size: 0.75rem; font-style: italic; text-align:center;">Nessun giocatore in questo reparto</div>'
+            return '<div style="color: #aaa; font-size: 0.75rem; font-style: italic; text-align:center;">Nessun giocatore</div>'
         
         h = ""
         for p in lista:
@@ -166,7 +163,6 @@ with col_center:
             tit = p["tit"]
             ruolo = p["ruolo"]
             
-            # Calcolo metriche specifiche per la partita odierna
             if "A" in ruolo or "PC" in ruolo:
                 prob_bonus = int(min(85, max(15, (fm - 5.5) * 25 + random.randint(5, 15))))
                 prob_amm = int(random.uniform(10, 30))
@@ -184,6 +180,7 @@ with col_center:
                 prob_amm = int(random.uniform(5, 15))
                 prob_esp = int(random.uniform(1, 4))
 
+            # Colore barra titolarità: Verde se >= 70, Arancione se in ballottaggio
             color_bar = "#2ecc71" if tit >= 70 else "#e67e22"
             iniziali = "".join([n[0] for n in nome.split()[:2]]).upper()
 
@@ -204,7 +201,7 @@ with col_center:
         .fl-wrapper {{
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }}
         .fl-header-title {{
@@ -215,23 +212,25 @@ with col_center:
             letter-spacing: 0.5px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }}
-        /* Stile Campo da Calcio Realistico FantaLab / Lega FC */
+        /* CAMPO DA CALCIO REALISTICO CON LINEE E CERCHIO DI CENTROCAMPO */
         .fl-field {{
-            background: radial-gradient(circle, #1e5631 0%, #11381e 100%);
+            background: linear-gradient(180deg, #1e5631 0%, #11381e 100%);
             border: 3px solid rgba(255, 255, 255, 0.9);
-            border-radius: 12px;
+            border-radius: 14px;
             position: relative;
             display: flex;
             flex-direction: column;
             justify-content: space-around;
             align-items: center;
-            padding: 12px;
-            height: 520px;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            padding: 15px;
+            height: 540px;
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.8);
             box-sizing: border-box;
+            overflow: hidden;
         }}
+        /* Linea di metà campo */
         .fl-field::before {{
             content: "";
             position: absolute;
@@ -239,41 +238,54 @@ with col_center:
             left: 0;
             width: 100%;
             height: 2px;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 1;
+        }}
+        /* Cerchio di centrocampo centrale */
+        .fl-field::after {{
+            content: "";
+            position: absolute;
+            top: calc(50% - 55px);
+            left: calc(50% - 55px);
+            width: 110px;
+            height: 110px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            z-index: 1;
         }}
         .fl-row {{
             display: flex;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
             width: 100%;
-            z-index: 2;
+            z-index: 3;
         }}
-        /* Card Giocatore Grafica Avanzata con Avatar */
+        /* CARD GIOCATORE STILE ALGO / FANTALAB */
         .fl-card {{
             background: #14181c;
             border: 1px solid #00ffcc;
-            border-radius: 6px;
-            padding: 3px 4px;
+            border-radius: 8px;
+            padding: 4px 5px;
             text-align: center;
-            width: 98px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.7);
+            width: 96px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
             display: flex;
             flex-direction: column;
             align-items: center;
         }}
         .fl-avatar {{
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             background: #1e272e;
             border: 1px solid #00ffcc;
             border-radius: 50%;
-            font-size: 0.5rem;
+            font-size: 0.52rem;
             font-weight: bold;
             color: #00ffcc;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1px;
+            margin-bottom: 2px;
         }}
         .fl-name {{
             font-weight: bold;
@@ -314,17 +326,17 @@ with col_center:
         .fl-bench {{
             background: #14171a;
             border: 1px solid #333;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 10px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }}
         .fl-bench-scroll {{
             display: flex;
-            gap: 8px;
+            gap: 10px;
             overflow-x: auto;
-            padding-bottom: 4px;
+            padding-bottom: 6px;
         }}
     </style>
 
@@ -348,4 +360,4 @@ with col_center:
     </div>
     """
 
-    components.html(fantalab_html, height=760, scrolling=True)
+    components.html(fantalab_html, height=780, scrolling=True)
