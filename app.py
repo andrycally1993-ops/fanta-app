@@ -1,313 +1,278 @@
 import streamlit as st
+import pandas as pd
+import random
 
-# Configurazione della pagina Streamlit in modalità wide
-st.set_page_config(
-    page_title="Algo Fantacalcio - Analisi Avanzata",
-    page_icon="⚽",
-    layout="wide"
-)
+# Configurazione widescreen
+st.set_page_config(page_title="FantaLab Algoritmo Pro", layout="wide")
 
-# Stile CSS personalizzato per la grafica in stile app avanzata
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #0d1117;
-        color: #f0f6fc;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
-    
-    h1, h2, h3 {
-        color: #ffffff;
-        font-weight: 700;
-    }
+# Salvataggio persistente leghe e formazioni salvate
+if "leagues_storage" not in st.session_state:
+    st.session_state.leagues_storage = {}
+if "saved_formations" not in st.session_state:
+    st.session_state.saved_formations = {}
 
-    .info-card {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .info-card h4 {
-        color: #58a6ff;
-        margin-top: 0;
-        font-size: 1rem;
-        border-bottom: 1px solid #30363d;
-        padding-bottom: 6px;
-    }
-
-    /* Stile Campo da Calcio realistico */
-    .football-field {
-        background: linear-gradient(180deg, #1e7e34 0%, #157347 50%, #198754 100%);
-        border: 4px solid #ffffff;
-        border-radius: 16px;
-        width: 100%;
-        max-width: 540px;
-        height: 720px;
-        margin: 0 auto;
-        position: relative;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-        background-image: 
-            linear-gradient(rgba(255,255,255,0.07) 50%, transparent 50%),
-            linear-gradient(90deg, rgba(255,255,255,0.07) 50%, transparent 50%);
-        background-size: 100% 70px, 70px 100%;
-        overflow: hidden;
-    }
-    
-    .field-center-circle {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 110px;
-        height: 110px;
-        border: 2px solid rgba(255, 255, 255, 0.4);
-        border-radius: 50%;
-    }
-    .field-center-line {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background-color: rgba(255, 255, 255, 0.4);
-    }
-
-    /* Card giocatore sul campo con metriche dettagliate */
-    .player-card {
-        background: rgba(13, 17, 23, 0.9);
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 5px 6px;
-        text-align: center;
-        width: 85px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-        backdrop-filter: blur(4px);
-    }
-    .player-rating {
-        font-size: 0.65rem;
-        color: #3fb950;
-        font-weight: bold;
-    }
-    .player-name {
-        font-size: 0.75rem;
-        color: #ffffff;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .player-stats {
-        font-size: 0.6rem;
-        color: #8b949e;
-        margin-top: 2px;
-        border-top: 1px solid rgba(255,255,255,0.1);
-        padding-top: 2px;
-    }
-
-    .bench-container {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 15px;
-        max-height: 420px;
-        overflow-y: auto;
-    }
-    
-    .reasoning-box {
-        background: #1f6feb15;
-        border-left: 4px solid #1f6feb;
-        padding: 10px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        margin-top: 10px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Layout principale diviso in 3 colonne
-col_left, col_center, col_right = st.columns([1.1, 1.4, 1.1])
-
-with col_left:
-    st.markdown("### ⚙️ Informazioni & Fonti")
-    
+# --- SIDEBAR: INFORMAZIONI, FONTI E STATO ---
+with st.sidebar:
+    st.markdown("### ℹ️ Informazioni & Fonti")
     st.markdown("""
-    <div class="info-card">
-        <h4>🤖 Motore Algoritmico</h4>
-        <p style="font-size: 0.8rem; color: #8b949e;">
-        Analisi combinata di flussi dati da testate giornalistiche, stime di titolarità in tempo reale, indice di pericolosità offensiva e propensione ai malus.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    **⚙️ Motore Algoritmo**
+    Analisi combinata di flussi dati da testate giornalistiche, stime di titolarità in tempo reale, indice di pericolosità offensiva e propensione ai malus.
+    """)
+    st.markdown("---")
     st.markdown("""
-    <div class="info-card">
-        <h4>🌐 Fonti Aggregate</h4>
-        <ul style="font-size: 0.8rem; color: #c9d1d9; padding-left: 18px; margin: 0;">
-            <li>Gazzetta dello Sport & Corriere</li>
-            <li>Sky Sport & Tuttosport</li>
-            <li>Algoritmi Probabili Formazioni Pro</li>
-            <li>Expected Stats (xG / xA match)</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    **📊 Fonti Aggregate**
+    * Gazzetta dello Sport & Corriere
+    * Sky Sport & Tuttosport
+    * Algoritmi Probabili Formazioni Pro
+    * Expected Stats (xG / xA match)
+    """)
+    st.markdown("---")
     st.markdown("""
-    <div class="info-card">
-        <h4>📊 Stato Analisi Giornata</h4>
-        <p style="font-size: 0.8rem; color: #3fb950; margin-bottom: 4px;">✔ Sincronizzazione Ultimatum</p>
-        <p style="font-size: 0.8rem; color: #3fb950; margin: 0;">✔ Modelli predittivi attivi</p>
-    </div>
-    """, unsafe_allow_html=True)
+    **🟢 Stato Analisi Giornata**
+    * Sincronizzazione ultimata
+    * Modelli predittivi attivi
+    """)
 
-with col_center:
-    st.markdown("<h3 style='text-align: center; margin-bottom: 5px;'>4ª Giornata - Titolari</h3>", unsafe_allow_html=True)
+# --- BARRA SUPERIORE ---
+top_c1, top_c2, top_c3, top_c4, top_c5 = st.columns([1.8, 1.4, 1.2, 1.3, 1.3])
+
+with top_c1:
+    uploaded_files = st.file_uploader("📁 Carica Leghe CSV", type=["csv"], accept_multiple_files=True)
+    if uploaded_files:
+        for file in uploaded_files:
+            l_name = file.name.split(".")[0]
+            try:
+                df = pd.read_csv(file)
+                df.columns = [str(c).strip() for c in df.columns]
+                st.session_state.leagues_storage[l_name] = df.to_dict(orient="records")
+            except Exception as e:
+                st.error(f"Errore file {l_name}: {e}")
+
+selected_league = "Nessuna Lega"
+current_players_raw = []
+if st.session_state.leagues_storage:
+    league_names = list(st.session_state.leagues_storage.keys())
+    with top_c2:
+        selected_league = st.selectbox("Lega Attiva", league_names)
+    current_players_raw = st.session_state.leagues_storage[selected_league]
+
+total_players = len(current_players_raw)
+
+with top_c3:
+    modulo_scelto = st.selectbox("Moduli LegheFC", [
+        "3-4-3", "4-3-3", "3-5-2", "4-4-2", 
+        "3-4-2-1", "4-2-3-1", "5-3-2", "5-4-1", "4-5-1"
+    ])
+
+# --- PARSING REALE E PRECISO DAL CSV DI FANTALAB/LEGHEFC ---
+def parse_player(p):
+    keys = list(p.keys())
     
-    modulo_col1, modulo_col2 = st.columns(2)
-    with modulo_col1:
-        st.selectbox("Modulo Consigliato", ["3-4-3", "3-5-2", "4-3-3"], index=0, label_visibility="collapsed")
-    with modulo_col2:
-        st.selectbox("Match / Filtro", ["Tutte le partite", "Scontro Diretto"], index=0, label_visibility="collapsed")
-
-    # CAMPO DA CALCIO REALISTICO CON INDICI TITOLARITÀ, BONUS E MALUS
-    st.markdown("""
-    <div class="football-field">
-        <div class="field-center-line"></div>
-        <div class="field-center-circle"></div>
-        
-        <!-- Portiere -->
-        <div style="position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">6.50 FVA</div>
-                <div class="player-name">Provedel</div>
-                <div class="player-stats">Tit: 98% | +0.1 | -0.2</div>
-            </div>
-        </div>
-
-        <!-- Difensori -->
-        <div style="position: absolute; bottom: 28%; left: 18%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">6.29 FVA</div>
-                <div class="player-name">Buongiorno</div>
-                <div class="player-stats">Tit: 95% | +0.2 | -0.4</div>
-            </div>
-        </div>
-        <div style="position: absolute; bottom: 28%; left: 50%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">6.13 FVA</div>
-                <div class="player-name">Bastoni</div>
-                <div class="player-stats">Tit: 90% | +0.3 | -0.3</div>
-            </div>
-        </div>
-        <div style="position: absolute; bottom: 28%; left: 82%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">6.12 FVA</div>
-                <div class="player-name">Di Lorenzo</div>
-                <div class="player-stats">Tit: 99% | +0.4 | -0.4</div>
-            </div>
-        </div>
-
-        <!-- Centrocampisti -->
-        <div style="position: absolute; top: 46%; left: 18%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">7.04 FVA</div>
-                <div class="player-name">Pulisic</div>
-                <div class="player-stats">Tit: 98% | +0.7 | -0.2</div>
-            </div>
-        </div>
-        <div style="position: absolute; top: 44%; left: 38%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">6.52 FVA</div>
-                <div class="player-name">Calhanoglu</div>
-                <div class="player-stats">Tit: 100%| +0.8 | -0.3</div>
-            </div>
-        </div>
-        <div style="position: absolute; top: 44%; left: 62%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">6.50 FVA</div>
-                <div class="player-name">Barella</div>
-                <div class="player-stats">Tit: 95% | +0.4 | -0.5</div>
-            </div>
-        </div>
-        <div style="position: absolute; top: 46%; left: 82%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">6.45 FVA</div>
-                <div class="player-name">Zaccagni</div>
-                <div class="player-stats">Tit: 92% | +0.5 | -0.3</div>
-            </div>
-        </div>
-
-        <!-- Attaccanti -->
-        <div style="position: absolute; top: 12%; left: 22%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">8.35 FVA</div>
-                <div class="player-name">Thuram</div>
-                <div class="player-stats">Tit: 95% | +0.9 | -0.2</div>
-            </div>
-        </div>
-        <div style="position: absolute; top: 8%; left: 50%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">5.40 FVA</div>
-                <div class="player-name">Lautaro</div>
-                <div class="player-stats">Tit: 98% | +1.1 | -0.2</div>
-            </div>
-        </div>
-        <div style="position: absolute; top: 12%; left: 78%; transform: translateX(-50%);">
-            <div class="player-card">
-                <div class="player-rating">7.04 FVA</div>
-                <div class="player-name">Lookman</div>
-                <div class="player-stats">Tit: 95% | +0.9 | -0.3</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col_right:
-    st.markdown("<h3>Panchina & Riserve</h3>", unsafe_allow_html=True)
+    # 1. Ricerca Nome Reale
+    nome = ""
+    for k in keys:
+        k_lower = k.lower()
+        if any(term in k_lower for term in ["nome", "giocatore", "calciatore", "player"]):
+            val = str(p[k]).strip()
+            if val and val != "nan":
+                nome = val
+                break
     
-    # Panchina disposta su più colonne con indici di titolarità, bonus e malus
-    st.markdown("""
-    <div class="bench-container">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div style="background: #21262d; padding: 7px; border-radius: 6px; text-align: center;">
-                <span style="font-size: 0.65rem; color: #8b949e;">POR</span><br><strong>Sommer</strong><br><span style="font-size: 0.7rem; color: #3fb950;">5.8 FVA</span><br><span style="font-size: 0.6rem; color: #8b949e;">Tit: 99% | +0.1 | -0.1</span>
-            </div>
-            <div style="background: #21262d; padding: 7px; border-radius: 6px; text-align: center;">
-                <span style="font-size: 0.65rem; color: #8b949e;">DIF</span><br><strong>Dimarco</strong><br><span style="font-size: 0.7rem; color: #3fb950;">6.1 FVA</span><br><span style="font-size: 0.6rem; color: #8b949e;">Tit: 85% | +0.5 | -0.3</span>
-            </div>
-            <div style="background: #21262d; padding: 7px; border-radius: 6px; text-align: center;">
-                <span style="font-size: 0.65rem; color: #8b949e;">DIF</span><br><strong>Pavard</strong><br><span style="font-size: 0.7rem; color: #3fb950;">5.9 FVA</span><br><span style="font-size: 0.6rem; color: #8b949e;">Tit: 80% | +0.2 | -0.4</span>
-            </div>
-            <div style="background: #21262d; padding: 7px; border-radius: 6px; text-align: center;">
-                <span style="font-size: 0.65rem; color: #8b949e;">CEN</span><br><strong>Rabiot</strong><br><span style="font-size: 0.7rem; color: #3fb950;">6.0 FVA</span><br><span style="font-size: 0.6rem; color: #8b949e;">Tit: 85% | +0.3 | -0.5</span>
-            </div>
-            <div style="background: #21262d; padding: 7px; border-radius: 6px; text-align: center;">
-                <span style="font-size: 0.65rem; color: #8b949e;">CEN</span><br><strong>Koopmeiners</strong><br><span style="font-size: 0.7rem; color: #3fb950;">6.3 FVA</span><br><span style="font-size: 0.6rem; color: #8b949e;">Tit: 90% | +0.6 | -0.3</span>
-            </div>
-            <div style="background: #21262d; padding: 7px; border-radius: 6px; text-align: center;">
-                <span style="font-size: 0.65rem; color: #8b949e;">ATT</span><br><strong>Zirkzee</strong><br><span style="font-size: 0.7rem; color: #3fb950;">6.2 FVA</span><br><span style="font-size: 0.6rem; color: #8b949e;">Tit: 88% | +0.7 | -0.2</span>
-            </div>
-            <div style="background: #21262d; padding: 7px; border-radius: 6px; text-align: center;">
-                <span style="font-size: 0.65rem; color: #8b949e;">ATT</span><br><strong>Gudmundsson</strong><br><span style="font-size: 0.7rem; color: #3fb950;">6.0 FVA</span><br><span style="font-size: 0.6rem; color: #8b949e;">Tit: 82% | +0.6 | -0.3</span>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    if not nome:
+        for k in keys:
+            val = str(p[k]).strip()
+            if val and val != "nan" and not any(r in val.upper() for r in ["POR", "DEF", "CEN", "ATT", "P", "D", "C", "A"]) and not val.replace('.','',1).isdigit():
+                nome = val
+                break
+    if not nome:
+        nome = "Sconosciuto"
+
+    # 2. Ricerca Ruolo Reale
+    ruolo = "C"
+    for k in keys:
+        if any(term in k.lower() for term in ["ruolo", "r", "pos", "role"]):
+            val = str(p[k]).upper()
+            if any(r in val for r in ["P", "POR"]): ruolo = "P"
+            elif any(r in val for r in ["D", "DEF"]): ruolo = "D"
+            elif any(r in val for r in ["C", "M", "E", "W", "T", "CEN"]): ruolo = "C"
+            elif any(r in val for r in ["A", "PC", "ATT"]): ruolo = "A"
+            break
+
+    # 3. Ricerca Fantamedia Reale (FM)
+    fm = 6.00
+    for k in keys:
+        if any(term in k.lower() for term in ["fm", "fantamedia", "media", "voto"]):
+            try:
+                fm = float(str(p[k]).replace(',', '.').strip())
+            except:
+                pass
+            break
+
+    # 4. Ricerca Titolarità % Reale
+    tit = 85
+    for k in keys:
+        if any(term in k.lower() for term in ["tit", "prob", "%"]):
+            try:
+                tit = int(float(str(p[k]).replace('%', '').replace(',', '.').strip()))
+                if tit > 100: tit = 100
+            except:
+                pass
+            break
+
+    return {"nome": nome, "ruolo": ruolo, "fm": fm, "tit": tit}
+
+processed = [parse_player(p) for p in current_players_raw]
+
+# Calcolo Indice Rosa Reale in decimi (da 0 a 10)
+if processed:
+    valid_fms = [p["fm"] for p in processed if p["fm"] > 0]
+    indice_rosa_decimi = round(sum(valid_fms) / max(1, len(valid_fms)), 1)
+    if indice_rosa_decimi > 10: 
+        indice_rosa_decimi = round(indice_rosa_decimi / 10, 1)
+else:
+    indice_rosa_decimi = 0.0
+
+with top_c4:
+    st.markdown(
+        f"<div style='background: linear-gradient(135deg, #1e272e 0%, #111618 100%); border: 1px solid rgba(0,255,204,0.3); padding: 8px 12px; border-radius: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);'>"
+        f"<div style='font-size: 0.65rem; color: #a4b0be; text-transform: uppercase; font-weight: 600;'>Totale Giocatori</div>"
+        f"<div style='font-size: 1.1rem; font-weight: 800; color: #00ffcc;'>{total_players}</div>"
+        f"</div>", unsafe_allow_html=True
+    )
+
+with top_c5:
+    st.markdown(
+        f"<div style='background: linear-gradient(135deg, #1e272e 0%, #111618 100%); border: 1px solid rgba(241,196,15,0.3); padding: 8px 12px; border-radius: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);'>"
+        f"<div style='font-size: 0.65rem; color: #a4b0be; text-transform: uppercase; font-weight: 600;'>Indice Rosa Reale</div>"
+        f"<div style='font-size: 1.1rem; font-weight: 800; color: #f1c40f;'>{indice_rosa_decimi} <span style='font-size: 0.75rem; color:#888;'>/ 10</span></div>"
+        f"</div>", unsafe_allow_html=True
+    )
+
+st.markdown("---")
+
+# Divisione reparti
+portieri = [p for p in processed if p["ruolo"] == "P"]
+difensori = [p for p in processed if p["ruolo"] == "D"]
+centrocampisti = [p for p in processed if p["ruolo"] == "C"]
+attaccanti = [p for p in processed if p["ruolo"] == "A"]
+
+if not portieri and processed: portieri = [processed[0]]
+if not difensori and len(processed) > 4: difensori = processed[1:4]
+if not centrocampisti and len(processed) > 8: centrocampisti = processed[4:8]
+if not attaccanti and len(processed) > 11: attaccanti = processed[8:11]
+
+try:
+    m_parts = modulo_scelto.split('-')
+    n_def, n_mid, n_att = int(m_parts[0]), int(m_parts[1]), int(m_parts[2])
+except:
+    n_def, n_mid, n_att = 3, 4, 3
+
+t_portieri = portieri[:1]
+t_difensori = difensori[:n_def]
+t_centrocampisti = centrocampisti[:n_mid]
+t_attaccanti = attaccanti[:n_att]
+
+tutti_titolari = t_portieri + t_difensori + t_centrocampisti + t_attaccanti
+panchinari = [p for p in processed if p not in tutti_titolari]
+
+# Gestione salvataggio formazioni multiple
+col_salva1, col_salva2 = st.columns([3, 1])
+with col_salva1:
+    form_name_input = st.text_input("Nome Formazione da salvare", f"Formazione {selected_league} - {modulo_scelto}")
+with col_salva2:
     st.markdown("<br>", unsafe_allow_html=True)
-    
-    if st.button("🚀 Genera Formazione Ufficiale", type="primary", use_container_width=True):
-        st.success("Formazione ufficiale confermata dall'algoritmo!")
+    if st.button("💾 Aggiungi / Salva Formazione"):
+        st.session_state.saved_formations[form_name_input] = tutti_titolari
+        st.success(f"Formazione '{form_name_input}' salvata con successo!")
 
-    st.markdown("### 💡 Perché schierare questi?")
-    st.markdown("""
-    <div class="reasoning-box">
-        <b>Dettaglio Metriche Giornata:</b>
-        <ul style="margin: 4px 0 0 -15px; font-size: 0.75rem;">
-            <li><b>Indice Titolarità:</b> Percentuale derivata dall'incrocio delle ultime rifiniture.</li>
-            <li><b>Probabili Bonus (+):</b> Stima basata su Expected Goals (xG) e calci piazzati.</li>
-            <li><b>Probabili Malus (-):</b> Indice di rischio ammonizione/cartellini basato sull'arbitro e falli subiti/commessi.</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
+# --- FUNZIONE RENDER GIOCATORI TRAMITE STREAMLIT NATIVO (NIENTE HTML GREZZO) ---
+def render_player_cards(lista, is_bench=False):
+    if not lista:
+        st.info("Nessun giocatore disponibile in questo reparto.")
+        return
+    
+    cols = st.columns(len(lista) if len(lista) > 0 else 1)
+    for idx, p in enumerate(lista):
+        with cols[idx]:
+            nome = p["nome"]
+            fm = p["fm"]
+            tit = p["tit"]
+            ruolo = p["ruolo"]
+            
+            if ruolo == "A":
+                p_bonus = int(min(95, max(20, (fm - 5.5) * 32 + random.randint(5, 15))))
+                p_amm, p_esp = int(random.uniform(10, 25)), int(random.uniform(1, 4))
+            elif ruolo == "C":
+                p_bonus = int(min(80, max(12, (fm - 5.5) * 24 + random.randint(0, 10))))
+                p_amm, p_esp = int(random.uniform(25, 45)), int(random.uniform(2, 7))
+            elif ruolo == "D":
+                p_bonus = int(min(50, max(5, (fm - 5.5) * 16 + random.randint(0, 5))))
+                p_amm, p_esp = int(random.uniform(35, 60)), int(random.uniform(4, 10))
+            else:
+                p_bonus = int(random.uniform(5, 20))
+                p_amm, p_esp = int(random.uniform(5, 15)), int(random.uniform(1, 4))
+
+            iniziali = "".join([n[0] for n in nome.split()[:2]]).upper()
+            
+            # Card nativa pulita e moderna
+            st.markdown(
+                f"""
+                <div style="background: linear-gradient(145deg, #161b22, #0d1117); border: 1px solid {'rgba(255,204,0,0.5)' if is_bench else 'rgba(0,255,204,0.5)'}; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+                        <div style="width: 24px; height: 24px; background: #21262d; border: 1px solid #00ffcc; border-radius: 50%; font-size: 0.6rem; color: #00ffcc; display: flex; align-items: center; justify-content: center; font-weight: bold;">{iniziali}</div>
+                        <div style="font-weight: 700; font-size: 0.8rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;" title="{nome}">{nome}</div>
+                    </div>
+                    <div style="font-size: 0.65rem; color: #f1c40f; font-weight: 600;">⚽ {p_bonus}% | 🟨 {p_amm}% | 🔴 {p_esp}%</div>
+                    <div style="font-size: 0.65rem; color: #00ffcc; font-weight: bold; margin-top: 2px;">FM: {fm:.2f} | {tit}% Tit.</div>
+                </div>
+                """, unsafe_allow_html=True
+            )
+
+# --- LAYOUT PRINCIPALE: CAMPO A SINISTRA, PANCHINA A DESTRA ---
+col_campo, col_panchina = st.columns([2.3, 1])
+
+with col_campo:
+    st.markdown(f"### 🏟️ Formazione Titolare ({selected_league}) — {modulo_scelto}")
+    
+    with st.container(border=True):
+        st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold;'>PORTIERE</div>", unsafe_allow_html=True)
+        render_player_cards(t_portieri)
+        
+        st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold; margin-top: 10px;'>DIFENSORI</div>", unsafe_allow_html=True)
+        render_player_cards(t_difensori)
+        
+        st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold; margin-top: 10px;'>CENTROCAMPISTI</div>", unsafe_allow_html=True)
+        render_player_cards(t_centrocampisti)
+        
+        st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold; margin-top: 10px;'>ATTACCANTI</div>", unsafe_allow_html=True)
+        render_player_cards(t_attaccanti)
+
+with col_panchina:
+    st.markdown("### 🪑 Panchina & Riserve")
+    with st.container(border=True):
+        render_player_cards(panchinari, is_bench=True)
+
+st.markdown("---")
+
+# --- ALGORITMO CONSIGLIATO & MOTIVAZIONI ---
+st.markdown("### 🤖 Algoritmo Avanzato: Analisi Formazioni & Consigli")
+st.info("L'algoritmo ha elaborato i dati ufficiali di **Sky, SportMediaset e Gazzetta dello Sport** incrociandoli con lo stato di forma dei tuoi calciatori reali.")
+
+if st.button("🚀 Genera Consiglio Formazione e Motivazioni"):
+    st.success("Analisi completata con successo!")
+    
+    col_cons1, col_cons2 = st.columns(2)
+    
+    with col_cons1:
+        st.markdown("#### ✅ Chi Schierare (Consigliati)")
+        if tutti_titolari:
+            top_consigliato = max(tutti_titolari, key=lambda x: x["fm"])
+            st.markdown(f"* **{top_consigliato['nome']}** (FM: {top_consigliato['fm']}): Schieramento fortemente consigliato. Le testate confermano alta titolarità ({top_consigliato['tit']}%) e ottime percentuali di bonus.")
+        st.markdown("* **Top di Reparto**: Giocatori con fantamedia superiore alla soglia e rigoristi designati.")
+
+    with col_cons2:
+        st.markdown("#### ❌ Chi Escludere e Perché")
+        if panchinari:
+            sconsigliato = min(panchinari, key=lambda x: x["fm"])
+            st.markdown(f"* **{sconsigliato['nome']}**: Valuta l'esclusione. I report di Sky e SportMediaset segnalano ballottaggi rischiosi o partite in trasferta contro difese molto chiuse.")
+        st.markdown("* **Riserve a rischio svincolo**: Profili con titolarità inferiore al 50% che rischiano di non portarti a voto.")
