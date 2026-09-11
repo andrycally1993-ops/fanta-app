@@ -39,11 +39,15 @@ with top_c1:
         for file in uploaded_files:
             l_name = file.name.split(".")[0]
             try:
-                df = pd.read_csv(file)
-                df.columns = [str(c).strip() for c in df.columns]
-                st.session_state.leagues_storage[l_name] = df.to_dict(orient="records")
-            except Exception as e:
-                st.error(f"Errore file {l_name}: {e}")
+                df = pd.read_csv(file, encoding='utf-8', on_bad_lines='skip')
+            except:
+                try:
+                    df = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
+                except Exception as e:
+                    st.error(f"Errore lettura file {l_name}: {e}")
+                    continue
+            df.columns = [str(c).strip() for c in df.columns]
+            st.session_state.leagues_storage[l_name] = df.to_dict(orient="records")
 
 selected_league = "Nessuna Lega"
 current_players_raw = []
@@ -61,55 +65,63 @@ with top_c3:
         "3-4-2-1", "4-2-3-1", "5-3-2", "5-4-1", "4-5-1"
     ])
 
-# --- PARSING DEI GIOCATORI DAL CSV ---
+# --- PARSING ROBUSTO SPECIFICO PER FANTALAB / CSV ---
 def parse_player(p):
     keys = list(p.keys())
     
-    # Nome
+    # 1. Ricerca Nome Reale
     nome = ""
     for k in keys:
-        if any(term in k.lower() for term in ["nome", "giocatore", "calciatore", "player"]):
+        k_lower = k.lower()
+        if any(term in k_lower for term in ["nome", "giocatore", "calciatore", "player", "calc"]):
             val = str(p[k]).strip()
-            if val and val != "nan":
+            if val and val.lower() != "nan":
                 nome = val
                 break
-    if not nome:
+    
+    if not nome or nome == "nan":
         for k in keys:
             val = str(p[k]).strip()
-            if val and val != "nan" and not any(r in val.upper() for r in ["POR", "DEF", "CEN", "ATT", "P", "D", "C", "A"]) and not val.replace('.','',1).isdigit():
+            if val and val.lower() != "nan" and not any(r in val.upper() for r in ["POR", "DEF", "CEN", "ATT", "P", "D", "C", "A"]) and not val.replace('.','',1).isdigit():
                 nome = val
                 break
-    if not nome:
-        nome = "Sconosciuto"
+    if not nome or nome == "nan":
+        nome = "Calciatore"
 
-    # Ruolo
+    # 2. Ricerca Ruolo Reale
     ruolo = "C"
     for k in keys:
-        if any(term in k.lower() for term in ["ruolo", "r", "pos", "role"]):
+        k_lower = k.lower()
+        if any(term in k_lower for term in ["ruolo", "r", "pos", "role", "rm"]):
             val = str(p[k]).upper()
             if any(r in val for r in ["P", "POR"]): ruolo = "P"
             elif any(r in val for r in ["D", "DEF"]): ruolo = "D"
             elif any(r in val for r in ["C", "M", "E", "W", "T", "CEN"]): ruolo = "C"
-            elif any(r in val for r in ["A", "PC", "ATT"]): ruolo = "A"
+            elif any(r in val for r in ["A", "PC", "ATT", "S"]): ruolo = "A"
             break
 
-    # Fantamedia (FM)
+    # 3. Ricerca Fantamedia Reale (FM)
     fm = 6.00
     for k in keys:
-        if any(term in k.lower() for term in ["fm", "fantamedia", "media", "voto"]):
+        k_lower = k.lower()
+        if any(term in k_lower for term in ["fm", "fantamedia", "media", "voto", "m.v."]):
             try:
-                fm = float(str(p[k]).replace(',', '.').strip())
+                clean_val = str(p[k]).replace(';', '').replace(',', '.').strip()
+                fm = float(clean_val)
             except:
                 pass
             break
 
-    # Titolarità %
+    # 4. Ricerca Titolarità % Reale
     tit = 85
     for k in keys:
-        if any(term in k.lower() for term in ["tit", "prob", "%"]):
+        k_lower = k.lower()
+        if any(term in k_lower for term in ["tit", "prob", "%", "pr"]):
             try:
-                tit = int(float(str(p[k]).replace('%', '').replace(',', '.').strip()))
+                clean_val = str(p[k]).replace(';', '').replace('%', '').replace(',', '.').strip()
+                tit = int(float(clean_val))
                 if tit > 100: tit = 100
+                if tit < 0: tit = 50
             except:
                 pass
             break
@@ -170,7 +182,7 @@ t_attaccanti = attaccanti[:n_att]
 tutti_titolari = t_portieri + t_difensori + t_centrocampisti + t_attaccanti
 panchinari = [p for p in processed if p not in tutti_titolari]
 
-# Funzione per rendere le card dei giocatori in modo fluido e nativo
+# Funzione per rendere le card dei giocatori in modo fluido, nativo e senza errori
 def render_player_cards(lista, is_bench=False):
     if not lista:
         st.info("Nessun giocatore in questo reparto.")
@@ -184,19 +196,19 @@ def render_player_cards(lista, is_bench=False):
             tit = p["tit"]
             ruolo = p["ruolo"]
             
-            # Calcolo probabilità bonus e malus basate sui dati reali
+            # Calcolo probabilità bonus e malus stabili
             if ruolo == "A":
-                p_bonus = int(min(95, max(20, (fm - 5.5) * 32 + random.randint(5, 15))))
-                p_amm, p_esp = int(random.uniform(10, 25)), int(random.uniform(1, 4))
+                p_bonus = int(min(95, max(20, (fm - 5.5) * 32 + 10)))
+                p_amm, p_esp = 15, 2
             elif ruolo == "C":
-                p_bonus = int(min(80, max(12, (fm - 5.5) * 24 + random.randint(0, 10))))
-                p_amm, p_esp = int(random.uniform(25, 45)), int(random.uniform(2, 7))
+                p_bonus = int(min(80, max(12, (fm - 5.5) * 24 + 5)))
+                p_amm, p_esp = 30, 4
             elif ruolo == "D":
-                p_bonus = int(min(50, max(5, (fm - 5.5) * 16 + random.randint(0, 5))))
-                p_amm, p_esp = int(random.uniform(35, 60)), int(random.uniform(4, 10))
+                p_bonus = int(min(50, max(5, (fm - 5.5) * 16 + 2)))
+                p_amm, p_esp = 45, 6
             else:
-                p_bonus = int(random.uniform(5, 20))
-                p_amm, p_esp = int(random.uniform(5, 15)), int(random.uniform(1, 4))
+                p_bonus = 10
+                p_amm, p_esp = 10, 2
 
             iniziali = "".join([n[0] for n in nome.split()[:2]]).upper()
             border_color = "rgba(255,204,0,0.6)" if is_bench else "rgba(0,255,204,0.6)"
@@ -208,7 +220,7 @@ def render_player_cards(lista, is_bench=False):
                     <div style="font-weight: 700; font-size: 0.75rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;" title="{nome}">{nome}</div>
                 </div>
                 <div style="font-size: 0.6rem; color: #f1c40f; font-weight: 600;">⚽ {p_bonus}% | 🟨 {p_amm}% | 🔴 {p_esp}%</div>
-                <div style="font-size: 0.6rem; color: #00ffcc; font-weight: bold; margin-top: 2px;">FM: {fm:.2f} | {tit}% Tit. (Consensus Testate)</div>
+                <div style="font-size: 0.6rem; color: #00ffcc; font-weight: bold; margin-top: 2px;">FM: {fm:.2f} | {tit}% Tit.</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -218,7 +230,6 @@ col_campo, col_panchina = st.columns([2.3, 1])
 with col_campo:
     st.markdown(f"### 🏟️ Formazione Titolare ({selected_league}) — {modulo_scelto}")
     
-    # Box stile campo da calcio pulito e nativo
     with st.container(border=True):
         st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold;'>PORTIERE</div>", unsafe_allow_html=True)
         render_player_cards(t_portieri)
