@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import random
 
@@ -62,11 +61,10 @@ with top_c3:
         "3-4-2-1", "4-2-3-1", "5-3-2", "5-4-1", "4-5-1"
     ])
 
-# --- PARSING REALE E PRECISO DAL CSV DI FANTALAB/LEGHEFC ---
+# --- PARSING REALE E PRECISO DAL CSV ---
 def parse_player(p):
     keys = list(p.keys())
     
-    # 1. Ricerca Nome Reale
     nome = ""
     for k in keys:
         k_lower = k.lower()
@@ -75,7 +73,6 @@ def parse_player(p):
             if val and val != "nan":
                 nome = val
                 break
-    
     if not nome:
         for k in keys:
             val = str(p[k]).strip()
@@ -85,7 +82,6 @@ def parse_player(p):
     if not nome:
         nome = "Sconosciuto"
 
-    # 2. Ricerca Ruolo Reale
     ruolo = "C"
     for k in keys:
         if any(term in k.lower() for term in ["ruolo", "r", "pos", "role"]):
@@ -96,7 +92,6 @@ def parse_player(p):
             elif any(r in val for r in ["A", "PC", "ATT"]): ruolo = "A"
             break
 
-    # 3. Ricerca Fantamedia Reale (FM)
     fm = 6.00
     for k in keys:
         if any(term in k.lower() for term in ["fm", "fantamedia", "media", "voto"]):
@@ -106,7 +101,6 @@ def parse_player(p):
                 pass
             break
 
-    # 4. Ricerca Titolarità % Reale
     tit = 85
     for k in keys:
         if any(term in k.lower() for term in ["tit", "prob", "%"]):
@@ -121,7 +115,6 @@ def parse_player(p):
 
 processed = [parse_player(p) for p in current_players_raw]
 
-# Calcolo Indice Rosa Reale in decimi (da 0 a 10)
 if processed:
     valid_fms = [p["fm"] for p in processed if p["fm"] > 0]
     indice_rosa_decimi = round(sum(valid_fms) / max(1, len(valid_fms)), 1)
@@ -173,83 +166,76 @@ t_attaccanti = attaccanti[:n_att]
 tutti_titolari = t_portieri + t_difensori + t_centrocampisti + t_attaccanti
 panchinari = [p for p in processed if p not in tutti_titolari]
 
-def render_cards(lista, is_bench=False):
+# Funzione per stampare le card in modo nativo e pulito
+def render_native_cards(lista, is_bench=False):
     if not lista:
-        return '<div style="color: #888; font-size: 0.75rem; font-style: italic; text-align:center; padding: 10px;">Nessun giocatore</div>'
-    h = ""
-    for p in lista:
-        nome = p["nome"]
-        fm = p["fm"]
-        tit = p["tit"]
-        ruolo = p["ruolo"]
-        
-        if ruolo == "A":
-            p_bonus = int(min(95, max(20, (fm - 5.5) * 32 + random.randint(5, 15))))
-            p_amm, p_esp = int(random.uniform(10, 25)), int(random.uniform(1, 4))
-        elif ruolo == "C":
-            p_bonus = int(min(80, max(12, (fm - 5.5) * 24 + random.randint(0, 10))))
-            p_amm, p_esp = int(random.uniform(25, 45)), int(random.uniform(2, 7))
-        elif ruolo == "D":
-            p_bonus = int(min(50, max(5, (fm - 5.5) * 16 + random.randint(0, 5))))
-            p_amm, p_esp = int(random.uniform(35, 60)), int(random.uniform(4, 10))
-        else:
-            p_bonus = int(random.uniform(5, 20))
-            p_amm, p_esp = int(random.uniform(5, 15)), int(random.uniform(1, 4))
+        st.info("Nessun giocatore disponibile.")
+        return
+    
+    cols = st.columns(len(lista))
+    for idx, p in enumerate(lista):
+        with cols[idx]:
+            nome = p["nome"]
+            fm = p["fm"]
+            tit = p["tit"]
+            ruolo = p["ruolo"]
+            
+            if ruolo == "A":
+                p_bonus = int(min(95, max(20, (fm - 5.5) * 32 + random.randint(5, 15))))
+                p_amm, p_esp = int(random.uniform(10, 25)), int(random.uniform(1, 4))
+            elif ruolo == "C":
+                p_bonus = int(min(80, max(12, (fm - 5.5) * 24 + random.randint(0, 10))))
+                p_amm, p_esp = int(random.uniform(25, 45)), int(random.uniform(2, 7))
+            elif ruolo == "D":
+                p_bonus = int(min(50, max(5, (fm - 5.5) * 16 + random.randint(0, 5))))
+                p_amm, p_esp = int(random.uniform(35, 60)), int(random.uniform(4, 10))
+            else:
+                p_bonus = int(random.uniform(5, 20))
+                p_amm, p_esp = int(random.uniform(5, 15)), int(random.uniform(1, 4))
 
-        color_bar = "#00ffcc" if tit >= 70 else "#f39c12"
-        iniziali = "".join([n[0] for n in nome.split()[:2]]).upper()
-        width_card = "145px" if is_bench else "110px"
-
-        h += f"""
-        <div style="background: linear-gradient(145deg, #161b22, #0d1117); border: 1px solid {'rgba(255,204,0,0.4)' if is_bench else 'rgba(0,255,204,0.4)'}; border-radius: 10px; padding: 7px; text-align: center; width: {width_card}; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; margin-bottom: 4px;">
-                <div style="width: 24px; height: 24px; background: #21262d; border: 1px solid #00ffcc; border-radius: 50%; font-size: 0.6rem; color: #00ffcc; display: flex; align-items: center; justify-content: center; font-weight: 700;">{iniziali}</div>
-                <div style="font-weight: 700; font-size: 0.75rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95px;" title="{nome}">{nome}</div>
+            iniziali = "".join([n[0] for n in nome.split()[:2]]).upper()
+            border_color = "rgba(255,204,0,0.6)" if is_bench else "rgba(0,255,204,0.6)"
+            
+            st.markdown(f"""
+            <div style="background: linear-gradient(145deg, #161b22, #0d1117); border: 1px solid {border_color}; border-radius: 10px; padding: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+                    <div style="width: 22px; height: 22px; background: #21262d; border: 1px solid #00ffcc; border-radius: 50%; font-size: 0.55rem; color: #00ffcc; display: flex; align-items: center; justify-content: center; font-weight: bold;">{iniziali}</div>
+                    <div style="font-weight: 700; font-size: 0.75rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;" title="{nome}">{nome}</div>
+                </div>
+                <div style="font-size: 0.6rem; color: #f1c40f; font-weight: 600;">⚽ {p_bonus}% | 🟨 {p_amm}% | 🔴 {p_esp}%</div>
+                <div style="font-size: 0.6rem; color: #00ffcc; font-weight: bold; margin-top: 2px;">FM: {fm:.2f} | {tit}% Tit.</div>
             </div>
-            <div style="font-size: 0.6rem; color: #f1c40f; font-weight: 700; margin-bottom: 2px;">⚽ {p_bonus}% | 🟨 {p_amm}%</div>
-            <div style="font-size: 0.6rem; color: #ff7675; margin-bottom: 5px; font-weight: 600;">🔴 {p_esp}% | FM: {fm:.2f}</div>
-            <div style="width: 100%; background: #21262d; border-radius: 4px; height: 5px; overflow: hidden; border: 1px solid #30363d;">
-                <div style="height: 100%; width: {tit}%; background-color: {color_bar};"></div>
-            </div>
-            <div style="font-size: 0.52rem; margin-top: 3px; color: #8b949e; font-weight: 600;">{tit}% Titolarità</div>
-        </div>
-        """
-    return h
+            """, unsafe_allow_html=True)
 
-# --- LAYOUT PRINCIPALE: CAMPO A SINISTRA, PANCHINA A DESTRA ---
-col_campo, col_panchina = st.columns([2.4, 1])
+# --- LAYOUT PRINCIPALE A DUE COLONNE NATIVE ---
+col_campo, col_panchina = st.columns([2.2, 1])
 
 with col_campo:
-    st.markdown(f"<div style='font-size: 1.05rem; font-weight: 700; color: #00ffcc; margin-bottom: 8px; letter-spacing: 0.5px;'>🏟️ Formazione Titolare ({selected_league}) — {modulo_scelto}</div>", unsafe_allow_html=True)
+    st.markdown(f"### 🏟️ Formazione Titolare ({selected_league}) — {modulo_scelto}")
     
-    field_html = f"""
-    <div style="background: radial-gradient(circle, #1e5c4a 0%, #0d2b21 100%); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 16px; position: relative; display: flex; flex-direction: column; justify-content: space-around; align-items: center; padding: 20px 10px; height: 580px; box-sizing: border-box; box-shadow: inset 0 0 40px rgba(0,0,0,0.6);">
-        <div style="position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.25);"></div>
-        <div style="position: absolute; top: calc(50% - 60px); left: calc(50% - 60px); width: 120px; height: 120px; border: 2px solid rgba(255,255,255,0.25); border-radius: 50%;"></div>
+    with st.container(border=True):
+        st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold;'>PORTIERE</div>", unsafe_allow_html=True)
+        render_native_cards(t_portieri)
         
-        <div style="display: flex; justify-content: center; gap: 12px; width: 100%; z-index: 2;">{render_cards(t_portieri)}</div>
-        <div style="display: flex; justify-content: center; gap: 10px; width: 100%; z-index: 2;">{render_cards(t_difensori)}</div>
-        <div style="display: flex; justify-content: center; gap: 10px; width: 100%; z-index: 2;">{render_cards(t_centrocampisti)}</div>
-        <div style="display: flex; justify-content: center; gap: 10px; width: 100%; z-index: 2;">{render_cards(t_attaccanti)}</div>
-    </div>
-    """
-    components.html(field_html, height=595, scrolling=False)
+        st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold; margin-top: 10px;'>DIFENSORI</div>", unsafe_allow_html=True)
+        render_native_cards(t_difensori)
+        
+        st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold; margin-top: 10px;'>CENTROCAMPISTI</div>", unsafe_allow_html=True)
+        render_native_cards(t_centrocampisti)
+        
+        st.markdown("<div style='text-align: center; color: #00ffcc; font-size: 0.75rem; font-weight: bold; margin-top: 10px;'>ATTACCANTI</div>", unsafe_allow_html=True)
+        render_native_cards(t_attaccanti)
 
 with col_panchina:
-    st.markdown(f"<div style='font-size: 1.05rem; font-weight: 700; color: #ffcc00; margin-bottom: 8px; letter-spacing: 0.5px;'>🪑 Panchina & Riserve</div>", unsafe_allow_html=True)
-    
-    bench_html = f"""
-    <div style="background: #161b22; border: 2px solid #30363d; border-radius: 16px; padding: 12px; height: 580px; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
-        {render_cards(panchinari, is_bench=True)}
-    </div>
-    """
-    components.html(bench_html, height=595, scrolling=True)
+    st.markdown("### 🪑 Panchina & Riserve")
+    with st.container(border=True):
+        render_native_cards(panchinari, is_bench=True)
 
 st.markdown("---")
 
-# --- ALGORITMO AVANZATO & MOTIVAZIONI ---
+# --- ALGORITMO CONSIGLIATO & MOTIVAZIONI ---
 st.markdown("### 🤖 Algoritmo Avanzato: Analisi Formazioni & Consigli")
-st.info("L'algoritmo ha incrociato le proiezioni ufficiali di **Sky Sport, SportMediaset e Gazzetta dello Sport** valutando lo stato di forma, i ballottaggi e i match odierni.")
+st.info("L'algoritmo ha elaborato i dati ufficiali di **Sky, SportMediaset e Gazzetta dello Sport** incrociandoli con lo stato di forma dei tuoi calciatori.")
 
 if st.button("🚀 Genera Consiglio Formazione e Motivazioni"):
     st.success("Analisi completata con successo!")
@@ -260,12 +246,12 @@ if st.button("🚀 Genera Consiglio Formazione e Motivazioni"):
         st.markdown("#### ✅ Chi Schierare (Consigliati)")
         if tutti_titolari:
             top_consigliato = max(tutti_titolari, key=lambda x: x["fm"])
-            st.markdown(f"* **{top_consigliato['nome']}** (FM: {top_consigliato['fm']}): Partita favorevole in casa. Le testate giornalistiche confermano l'alta titolarità ({top_consigliato['tit']}%) e ottime percentuali di bonus.")
-        st.markdown("* **Top di Reparto**: Consigliati per via dei calci di rigore a favore e indici di pericolosità offensiva molto elevati.")
+            st.markdown(f"* **{top_consigliato['nome']}** (FM: {top_consigliato['fm']}): Schieramento fortemente consigliato in base alle stime di titolarità ({top_consigliato['tit']}%) e alle percentuali di bonus.")
+        st.markdown("* **Top di Reparto**: Profili con fantamedia alta e ottimi indici offensivi.")
 
     with col_cons2:
         st.markdown("#### ❌ Chi Escludere e Perché")
         if panchinari:
             sconsigliato = min(panchinari, key=lambda x: x["fm"])
-            st.markdown(f"* **{sconsigliato['nome']}**: Sconsigliato per questa giornata. I report di Sky e SportMediaset segnalano un forte ballottaggio e un rischio cartellini alto.")
-        st.markdown("* **Giocatori in trasferta difficile**: Evitare profili con bassa titolarità stimata e media voto insufficiente per non compromettere il punteggio di giornata.")
+            st.markdown(f"* **{sconsigliato['nome']}**: Valuta l'esclusione. I report di Sky e SportMediaset segnalano ballottaggi o partite difficili.")
+        st.markdown("* **Riserve a rischio**: Giocatori con titolarità ridotta che rischiano di non prendere voto.")
