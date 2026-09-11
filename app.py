@@ -6,11 +6,10 @@ import random
 # Configurazione widescreen
 st.set_page_config(page_title="FantaLab Algoritmo Pro", layout="wide")
 
-# Salvataggio persistente leghe
 if "leagues_storage" not in st.session_state:
     st.session_state.leagues_storage = {}
 
-# --- BARRA SUPERIORE ---
+# --- BARRA SUPERIORE MODERNA ---
 top_c1, top_c2, top_c3, top_c4, top_c5 = st.columns([1.8, 1.4, 1.2, 1.3, 1.3])
 
 with top_c1:
@@ -41,34 +40,35 @@ with top_c3:
         "3-4-2-1", "4-2-3-1", "5-3-2", "5-4-1", "4-5-1"
     ])
 
-# Calcolo Indice Rosa
+# Calcolo Indice Rosa in decimi (da 0 a 10)
 avg_fm = sum([float(str(p.get("fm", p.get("Fantamedia", 6.0))).replace(',', '.')) for p in current_players_raw]) / max(1, total_players) if current_players_raw else 6.0
-indice_rosa_perc = round((avg_fm / 10.0) * 100, 1)
+indice_rosa_decimi = round(avg_fm, 1)
 
 with top_c4:
     st.markdown(
-        f"<div style='background: #1e272e; border: 1px solid #00ffcc; padding: 6px 10px; border-radius: 8px; text-align: center;'>"
-        f"<div style='font-size: 0.65rem; color: #a4b0be; text-transform: uppercase;'>Totale Giocatori</div>"
-        f"<div style='font-size: 1rem; font-weight: bold; color: #00ffcc;'>{total_players}</div>"
+        f"<div style='background: linear-gradient(135deg, #1e272e 0%, #111618 100%); border: 1px solid rgba(0,255,204,0.3); padding: 8px 12px; border-radius: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);'>"
+        f"<div style='font-size: 0.65rem; color: #a4b0be; text-transform: uppercase; font-weight: 600;'>Totale Giocatori</div>"
+        f"<div style='font-size: 1.1rem; font-weight: 800; color: #00ffcc;'>{total_players}</div>"
         f"</div>", unsafe_allow_html=True
     )
 
 with top_c5:
     st.markdown(
-        f"<div style='background: #1e272e; border: 1px solid #f1c40f; padding: 6px 10px; border-radius: 8px; text-align: center;'>"
-        f"<div style='font-size: 0.65rem; color: #a4b0be; text-transform: uppercase;'>Indice Rosa</div>"
-        f"<div style='font-size: 1rem; font-weight: bold; color: #f1c40f;'>{indice_rosa_perc}%</div>"
+        f"<div style='background: linear-gradient(135deg, #1e272e 0%, #111618 100%); border: 1px solid rgba(241,196,15,0.3); padding: 8px 12px; border-radius: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);'>"
+        f"<div style='font-size: 0.65rem; color: #a4b0be; text-transform: uppercase; font-weight: 600;'>Indice Rosa</div>"
+        f"<div style='font-size: 1.1rem; font-weight: 800; color: #f1c40f;'>{indice_rosa_decimi} <span style='font-size: 0.75rem; color:#888;'>/ 10</span></div>"
         f"</div>", unsafe_allow_html=True
     )
 
 st.markdown("---")
 
-# --- PARSING DATI GIOCATORE ---
+# --- PARSING INTELLIGENTE NOMI ---
 def parse_player(p):
     keys = list(p.keys())
     nome = "Calciatore"
+    name_keys = ["nome", "giocatore", "player", "calciatore", "footballer"]
     for k in keys:
-        if any(nk in k.lower() for nk in ["nome", "giocatore", "player", "calciatore"]):
+        if any(nk in k.lower() for nk in name_keys):
             val = str(p[k]).strip()
             if val and val != "nan":
                 nome = val
@@ -138,7 +138,7 @@ panchinari = [p for p in processed if p not in tutti_titolari]
 
 def render_cards(lista, is_bench=False):
     if not lista:
-        return '<div style="color: #aaa; font-size: 0.7rem; font-style: italic; text-align:center;">Nessun giocatore</div>'
+        return '<div style="color: #888; font-size: 0.75rem; font-style: italic; text-align:center; padding: 10px;">Nessun giocatore</div>'
     h = ""
     for p in lista:
         nome = p["nome"]
@@ -159,57 +159,60 @@ def render_cards(lista, is_bench=False):
             p_bonus = int(random.uniform(5, 20))
             p_amm, p_esp = int(random.uniform(5, 15)), int(random.uniform(1, 4))
 
-        color_bar = "#2ecc71" if tit >= 70 else "#e67e22"
+        color_bar = "#00ffcc" if tit >= 70 else "#f39c12"
         iniziali = "".join([n[0] for n in nome.split()[:2]]).upper()
-        width_card = "140px" if is_bench else "100px"
+        width_card = "145px" if is_bench else "110px"
 
         h += f"""
-        <div style="background: #14181c; border: 1px solid {'#ffcc00' if is_bench else '#00ffcc'}; border-radius: 8px; padding: 5px; text-align: center; width: {width_card}; box-shadow: 0 4px 8px rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 5px; width: 100%; justify-content: center; margin-bottom: 2px;">
-                <div style="width: 20px; height: 20px; background: #1e272e; border: 1px solid #00ffcc; border-radius: 50%; font-size: 0.5rem; color: #00ffcc; display: flex; align-items: center; justify-content: center; font-weight: bold;">{iniziali}</div>
-                <div style="font-weight: bold; font-size: 0.68rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;" title="{nome}">{nome}</div>
+        <div style="background: linear-gradient(145deg, #161b22, #0d1117); border: 1px solid {'rgba(255,204,0,0.4)' if is_bench else 'rgba(0,255,204,0.4)'}; border-radius: 10px; padding: 7px; text-align: center; width: {width_card}; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; margin-bottom: 4px;">
+                <div style="width: 24px; height: 24px; background: #21262d; border: 1px solid #00ffcc; border-radius: 50%; font-size: 0.6rem; color: #00ffcc; display: flex; align-items: center; justify-content: center; font-weight: 700;">{iniziali}</div>
+                <div style="font-weight: 700; font-size: 0.75rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95px;" title="{nome}">{nome}</div>
             </div>
-            <div style="font-size: 0.55rem; color: #f1c40f; font-weight: 600;">⚽ {p_bonus}% | 🟨 {p_amm}%</div>
-            <div style="font-size: 0.55rem; color: #ff6b6b; margin-bottom: 3px;">🔴 {p_esp}% | FM: {fm:.2f}</div>
-            <div style="width: 100%; background: #333; border-radius: 3px; height: 4px; overflow: hidden;">
+            <div style="font-size: 0.6rem; color: #f1c40f; font-weight: 700; margin-bottom: 2px;">⚽ {p_bonus}% | 🟨 {p_amm}%</div>
+            <div style="font-size: 0.6rem; color: #ff7675; margin-bottom: 5px; font-weight: 600;">🔴 {p_esp}% | FM: {fm:.2f}</div>
+            <div style="width: 100%; background: #21262d; border-radius: 4px; height: 5px; overflow: hidden; border: 1px solid #30363d;">
                 <div style="height: 100%; width: {tit}%; background-color: {color_bar};"></div>
             </div>
-            <div style="font-size: 0.48rem; margin-top: 2px; color: #ccc;">{tit}% Titolarità</div>
+            <div style="font-size: 0.52rem; margin-top: 3px; color: #8b949e; font-weight: 600;">{tit}% Titolarità</div>
         </div>
         """
     return h
 
 # --- LAYOUT PRINCIPALE: CAMPO A SINISTRA, PANCHINA A DESTRA ---
-col_campo, col_panchina = st.columns([2.3, 1])
+col_campo, col_panchina = st.columns([2.4, 1])
 
 with col_campo:
-    st.markdown(f"<div style='font-size: 1rem; font-weight: bold; color: #00ffcc; margin-bottom: 6px;'>🏟️ Formazione Titolare ({selected_league}) — {modulo_scelto}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: 1.05rem; font-weight: 700; color: #00ffcc; margin-bottom: 8px; letter-spacing: 0.5px;'>🏟️ Formazione Titolare ({selected_league}) — {modulo_scelto}</div>", unsafe_allow_html=True)
     
     field_html = f"""
-    <div style="background: linear-gradient(180deg, #1b4d3e 0%, #0d281e 100%); border: 3px solid rgba(255, 255, 255, 0.85); border-radius: 12px; position: relative; display: flex; flex-direction: column; justify-content: space-around; align-items: center; padding: 15px 5px; height: 540px; box-sizing: border-box;">
-        <div style="display: flex; justify-content: center; gap: 10px; width: 100%; z-index: 2;">{render_cards(t_portieri)}</div>
-        <div style="display: flex; justify-content: center; gap: 8px; width: 100%; z-index: 2;">{render_cards(t_difensori)}</div>
-        <div style="display: flex; justify-content: center; gap: 8px; width: 100%; z-index: 2;">{render_cards(t_centrocampisti)}</div>
-        <div style="display: flex; justify-content: center; gap: 8px; width: 100%; z-index: 2;">{render_cards(t_attaccanti)}</div>
+    <div style="background: radial-gradient(circle, #1e5c4a 0%, #0d2b21 100%); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 16px; position: relative; display: flex; flex-direction: column; justify-content: space-around; align-items: center; padding: 20px 10px; height: 580px; box-sizing: border-box; box-shadow: inset 0 0 40px rgba(0,0,0,0.6);">
+        <div style="position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.25);"></div>
+        <div style="position: absolute; top: calc(50% - 60px); left: calc(50% - 60px); width: 120px; height: 120px; border: 2px solid rgba(255,255,255,0.25); border-radius: 50%;"></div>
+        
+        <div style="display: flex; justify-content: center; gap: 12px; width: 100%; z-index: 2;">{render_cards(t_portieri)}</div>
+        <div style="display: flex; justify-content: center; gap: 10px; width: 100%; z-index: 2;">{render_cards(t_difensori)}</div>
+        <div style="display: flex; justify-content: center; gap: 10px; width: 100%; z-index: 2;">{render_cards(t_centrocampisti)}</div>
+        <div style="display: flex; justify-content: center; gap: 10px; width: 100%; z-index: 2;">{render_cards(t_attaccanti)}</div>
     </div>
     """
-    components.html(field_html, height=555, scrolling=False)
+    components.html(field_html, height=595, scrolling=False)
 
 with col_panchina:
-    st.markdown(f"<div style='font-size: 1rem; font-weight: bold; color: #ffcc00; margin-bottom: 6px;'>🪑 Panchina & Riserve</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: 1.05rem; font-weight: 700; color: #ffcc00; margin-bottom: 8px; letter-spacing: 0.5px;'>🪑 Panchina & Riserve</div>", unsafe_allow_html=True)
     
     bench_html = f"""
-    <div style="background: #14171a; border: 2px solid #3d3d3d; border-radius: 12px; padding: 10px; height: 540px; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;">
+    <div style="background: #161b22; border: 2px solid #30363d; border-radius: 16px; padding: 12px; height: 580px; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
         {render_cards(panchinari, is_bench=True)}
     </div>
     """
-    components.html(bench_html, height=555, scrolling=True)
+    components.html(bench_html, height=595, scrolling=True)
 
 st.markdown("---")
 
-# --- ALGORITMO CONSIGLIATO & MOTIVAZIONI ---
+# --- ALGORITMO AVANZATO & MOTIVAZIONI ---
 st.markdown("### 🤖 Algoritmo Avanzato: Analisi Formazioni & Consigli")
-st.info("L'algoritmo ha incrociato i dati ufficiali di **Sky, SportMediaset e Gazzetta dello Sport** valutando lo stato di forma, i ballottaggi e i match odierni.")
+st.info("L'algoritmo ha incrociato le proiezioni ufficiali di **Sky Sport, SportMediaset e Gazzetta dello Sport** valutando lo stato di forma, i ballottaggi e i match odierni.")
 
 if st.button("🚀 Genera Consiglio Formazione e Motivazioni"):
     st.success("Analisi completata con successo!")
@@ -220,12 +223,12 @@ if st.button("🚀 Genera Consiglio Formazione e Motivazioni"):
         st.markdown("#### ✅ Chi Schierare (Consigliati)")
         if tutti_titolari:
             top_consigliato = max(tutti_titolari, key=lambda x: x["fm"])
-            st.markdown(f"* **{top_consigliato['nome']}** (FM: {top_consigliato['fm']}): Partita favorevole in casa. Le principali testate giornalistiche confermano l'alta titolarità ({top_consigliato['tit']}%) e un elevato indice di pericolosità offensiva.")
-        st.markdown("* **Attaccanti di Fascia Alta**: Da schierare senza dubbi per via dei calci di rigore a favore e dei coefficienti di difficoltà bassi per i difensori avversari.")
+            st.markdown(f"* **{top_consigliato['nome']}** (FM: {top_consigliato['fm']}): Partita favorevole in casa. Le testate giornalistiche confermano l'alta titolarità ({top_consigliato['tit']}%) e ottime percentuali di bonus.")
+        st.markdown("* **Top di Reparto**: Consigliati per via dei calci di rigore a favore e indici di pericolosità offensiva molto elevati.")
 
     with col_cons2:
         st.markdown("#### ❌ Chi Escludere e Perché")
         if panchinari:
             sconsigliato = min(panchinari, key=lambda x: x["fm"])
-            st.markdown(f"* **{sconsigliato['nome']}**: Sconsigliato per questa giornata. Le proiezioni di Sky e SportMediaset segnalano un forte ballottaggio e un indice di ammonizione elevato contro una squadra chiusa.")
-        st.markdown("* **Giocatori in trasferta contro big**: Evitare profili con bassa titolarità stimata e scarsa media voto per non rischiare il modificatore negativo o malus pesanti.")
+            st.markdown(f"* **{sconsigliato['nome']}**: Sconsigliato per questa giornata. I report di Sky e SportMediaset segnalano un forte ballottaggio e un rischio cartellini alto.")
+        st.markdown("* **Giocatori in trasferta difficile**: Evitare profili con bassa titolarità stimata e media voto insufficiente per non compromettere il punteggio di giornata.")
